@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ namespace OpenCvSharpDemo
 {
     class LucasKanade
     {
-        public int[] LucasKanadeStep(Mat img1, Mat img2, int[] t, int scale)
+        public int[] LucasKanadeStep(int[] t, int scale)
         {
             // Transform the image
             //Translation(img2, img2t, t);
@@ -27,7 +28,7 @@ namespace OpenCvSharpDemo
                 {
                     // If both have full alphas, then compute and accumulate the error
                     var e = img2.At<byte>(y, x) - img1.At<byte>(y + t[1], x + t[0]);
-                    errorImg.Set<byte>(y - diff, x - diff, (byte) (e / 4 + 63));
+                    errorImg.Set<byte>(y - diff, x - diff, (byte) (127 - Math.Abs(e)));
                     // Accumulate the matrix entries
                     double gx = 0.5 * (img2.At<byte>(y, x + diff) - img2.At<byte>(y, x - diff));
                     double gy = 0.5 * (img2.At<byte>(y + diff, x) - img2.At<byte>(y - diff, x));
@@ -43,12 +44,16 @@ namespace OpenCvSharpDemo
             double det = 1.0 / (A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]);
             var t0 = (int)(det * scale * (A[1, 1] * b[0] - A[1, 0] * b[1]));
             var t1 = (int)(det * scale * (A[0, 0] * b[1] - A[0, 1] * b[0]));
-            while (!IsIntoImage(img1, t[0] + t0, t[1] + t1))
-            {
-                t0 /= 2;
-                t1 /= 2;
-            }
             return new int[] { t[0] + t0, t[1] + t1 };
+        }
+
+
+        private Mat img1, img2;
+        public Mat ImgScene {
+            set { img1 = value; }
+        }
+        public Mat ImgObj {
+            set { img2 = value; }
         }
 
         private Mat errorImg;
@@ -60,12 +65,18 @@ namespace OpenCvSharpDemo
         private Mat gradientsY;
         public Mat GradientsY { get { return gradientsY;  } }
 
-        private bool IsIntoImage(Mat img, int x, int y)
+        private double scale = 10;
+        public double Scale
         {
-            return x >= 0 && x < img.Width && y >= 0 && y < img.Height;
+            get { return scale; }
+            set
+            {
+                scale = value;
+                lastVector = null;
+            }
         }
 
-        public long ImgsDiff(Mat img1, Mat img2, int[] t)
+        public long ImgsDiff(int[] t)
         {
             long res = 0;
             for (int y = 0; y < img2.Height; y++)
@@ -73,10 +84,45 @@ namespace OpenCvSharpDemo
                 for (int x = 0; x < img2.Width; x++)
                 {
                     var e = img2.At<byte>(y + t[1], x + t[0]) - img1.At<byte>(y, x);
-                    res += e * e / 10000;
+                    res += e * e;// / 10000;
                 }
             }
             return res;
+        }
+
+        private int[] lastVector;
+
+        public int[] LucasKanadeStepNorm(int[] t)
+        {
+            var vector = LucasKanadeStep(t, 256);
+            var diff = new int[] {vector[0] - t[0], vector[1] - t[1]};
+            if (diff[0] == 0 && diff[1] == 0)
+                return null;
+            var norm = (int)Math.Sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
+            if (scale > 1)
+            {
+                diff[0] = (int)scale * diff[0] / norm;
+                diff[1] = (int)scale * diff[1] / norm;
+            }
+            else
+            {
+                if (Math.Abs(diff[0]) > Math.Abs(diff[1]))
+                {
+                    diff[0] = diff[0] > 0 ? 1 : -1;
+                }
+                else if (diff[1] > 0)
+                {
+                    diff[1] = diff[1] > 0 ? 1 : -1;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            if (lastVector != null && lastVector[0] * diff[0] + lastVector[1] * diff[1] < 0)
+                return null;
+            lastVector = diff;
+            return new int[] {t[0] + diff[0], t[1] + diff[1]};
         }
     }
 }

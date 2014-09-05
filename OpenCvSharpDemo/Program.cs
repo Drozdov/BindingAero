@@ -23,12 +23,16 @@ namespace OpenCvSharpDemo
 
         static void Main(string[] args)
         {
-
-            Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
             var lc = new LucasKanade();
+
+            Mat scene = new Mat("../../../scene_lake.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../object_lake.png", LoadMode.GrayScale);
+
+            lc.ImgScene = scene;
+            lc.ImgObj = obj;
+
             Console.WriteLine(scene.Width);
-            int[] t = new int[] { 131, 155 };
+            int[] t = new int[] { 150, 150 };
             /*int[] d = lc.LucasKanadeStep(scene, obj, t);
 
             while (!Eq(d, t))
@@ -39,37 +43,93 @@ namespace OpenCvSharpDemo
             }
             Console.WriteLine(d[0] + " " + d[1]);*/
 
-            var oldDiff = lc.ImgsDiff(scene, obj, t);
-            for (int scale = 20; scale != 0; scale = scale * 3 / 4)
+            byte color = 0;
+
+            int[] p;
+            for (double scale = 16; scale > 0; scale -= 5)
+            {
+                lc.Scale = scale;
+                Console.WriteLine("scale = " + scale);
+                while ((p = lc.LucasKanadeStepNorm(t)) != null)
+                {
+                    t = p;
+                    scene.Set<byte>(t[1], t[0], color);
+                    scene.Set<byte>(t[1] - 1, t[0], color);
+                    scene.Set<byte>(t[1] + 1, t[0], color);
+                    scene.Set<byte>(t[1], t[0] - 1, color);
+                    scene.Set<byte>(t[1], t[0] + 1, color);
+                    scene.Set<byte>(t[1] - 2, t[0], color);
+                    scene.Set<byte>(t[1] + 2, t[0], color);
+                    scene.Set<byte>(t[1], t[0] - 2, color);
+                    scene.Set<byte>(t[1], t[0] + 2, color);
+                    scene.Set<byte>(t[1] - 3, t[0], color);
+                    scene.Set<byte>(t[1] + 3, t[0], color);
+                    scene.Set<byte>(t[1], t[0] - 3, color);
+                    scene.Set<byte>(t[1], t[0] + 3, color);
+                    using (new Window("src image", scene))
+                    using (new Window("obj image", obj))
+                    using (new Window("error", lc.ErrorImg))
+                    {
+                        Cv2.WaitKey();
+                    }
+                }
+            }
+
+            /*var oldDiff = lc.ImgsDiff(scene, obj, t);
+            for (int scale = 128; scale > 0; )
             {
                 var p = lc.LucasKanadeStep(scene, obj, t, scale);
                 var diff = lc.ImgsDiff(scene, obj, p);
-                Console.WriteLine(oldDiff + " " + diff);
-                //if (oldDiff >= diff)
+                if (oldDiff > diff)
                 {
+                    Console.WriteLine(oldDiff + "->" + diff);
+                    Console.WriteLine("({0}, {1}) -> ({2}, {3})",  t[0], t[1], p[0], p[1]);
                     t = p;
                     oldDiff = diff;
+                    scene.Set<byte>(t[1], t[0], color);
+                    scene.Set<byte>(t[1] - 1, t[0], color);
+                    scene.Set<byte>(t[1] + 1, t[0], color);
+                    scene.Set<byte>(t[1], t[0] - 1, color);
+                    scene.Set<byte>(t[1], t[0] + 1, color);
+                    scene.Set<byte>(t[1] - 2, t[0], color);
+                    scene.Set<byte>(t[1] + 2, t[0], color);
+                    scene.Set<byte>(t[1], t[0] - 2, color);
+                    scene.Set<byte>(t[1], t[0] + 2, color);
+                    scene.Set<byte>(t[1] - 3, t[0], color);
+                    scene.Set<byte>(t[1] + 3, t[0], color);
+                    scene.Set<byte>(t[1], t[0] - 3, color);
+                    scene.Set<byte>(t[1], t[0] + 3, color);
+
+                    using (new Window("src image", scene))
+                    using (new Window("obj image", obj))
+                    using (new Window("error", lc.ErrorImg))
+                    {
+                        Cv2.WaitKey();
+                    }
                 }
+                else
+                {
+                    scale /= 2;
+                    Console.WriteLine("Scale = " + scale);
+                    using (new Window("src image", scene))
+                    using (new Window("obj image", obj))
+                    using (new Window("error", lc.ErrorImg))
+                    {
+                        Cv2.WaitKey();
+                    }
+                }
+                //Console.WriteLine(oldDiff + " " + diff);
                 //Console.WriteLine(p[0] + " " + p[1]);
-                Console.WriteLine(t[0] + " " + t[1]);
+                //Console.WriteLine(t[0] + " " + t[1]);
                 //Console.WriteLine("------------");
 
-                /*using (new Window("error image", lc.ErrorImg))
-                {
-                    Cv2.WaitKey();
-                }*/
-                using (new Window("error", lc.ErrorImg))
-                using (new Window("gr x", lc.GradientsX))
-                using (new Window("gr y", lc.GradientsY))
-                {
-                    Cv2.WaitKey();
-                }
+             
 
                
 
-            }
+            }*/
 
-            byte color = 0;
+            
             scene.Set<byte>(t[1], t[0], color);
             scene.Set<byte>(t[1] - 1, t[0], color);
             scene.Set<byte>(t[1] + 1, t[0], color);
