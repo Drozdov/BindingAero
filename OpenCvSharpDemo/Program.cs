@@ -24,8 +24,8 @@ namespace OpenCvSharpDemo
         static void Main(string[] args)
         {
 
-            Mat scene = new Mat("scene.png", LoadMode.GrayScale);
-            Mat obj = new Mat("obj.png", LoadMode.GrayScale);
+            Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
             var lc = new LucasKanade();
             Console.WriteLine(scene.Width);
             int[] t = new int[] { 131, 155 };
