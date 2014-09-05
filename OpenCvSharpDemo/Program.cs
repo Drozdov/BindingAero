@@ -24,28 +24,22 @@ namespace OpenCvSharpDemo
         static void Main(string[] args)
         {
             var lc = new LucasKanade();
+            lc.UseOriginGradients = false;
 
-            Mat scene = new Mat("../../../scene_lake.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../object_lake.png", LoadMode.GrayScale);
+            Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
 
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-            Console.WriteLine(scene.Width);
-            int[] t = new int[] { 150, 150 };
-            /*int[] d = lc.LucasKanadeStep(scene, obj, t);
-
-            while (!Eq(d, t))
-            {
-                Console.WriteLine(d[0] + " " + d[1]);
-                t = d;
-                d = lc.LucasKanadeStep(scene, obj, t);
-            }
-            Console.WriteLine(d[0] + " " + d[1]);*/
+            int[] t = new int[] { 150, 200 };
+            int[] d = lc.LucasKanadeStep(t, 100);
 
             byte color = 0;
 
             int[] p;
+            
+#if true
             for (double scale = 16; scale > 0; scale -= 5)
             {
                 lc.Scale = scale;
@@ -68,6 +62,8 @@ namespace OpenCvSharpDemo
                     scene.Set<byte>(t[1], t[0] + 3, color);
                     using (new Window("src image", scene))
                     using (new Window("obj image", obj))
+                    using (new Window("gr x", lc.GradientsX))
+                    using (new Window("gr y", lc.GradientsY))
                     using (new Window("error", lc.ErrorImg))
                     {
                         Cv2.WaitKey();
@@ -75,11 +71,12 @@ namespace OpenCvSharpDemo
                 }
             }
 
-            /*var oldDiff = lc.ImgsDiff(scene, obj, t);
+#else
+            var oldDiff = lc.ImgsDiff(t);
             for (int scale = 128; scale > 0; )
             {
-                var p = lc.LucasKanadeStep(scene, obj, t, scale);
-                var diff = lc.ImgsDiff(scene, obj, p);
+                p = lc.LucasKanadeStep(t, scale);
+                var diff = lc.ImgsDiff(p);
                 if (oldDiff > diff)
                 {
                     Console.WriteLine(oldDiff + "->" + diff);
@@ -127,9 +124,9 @@ namespace OpenCvSharpDemo
 
                
 
-            }*/
-
-            
+            }
+#endif
+            color = 255;
             scene.Set<byte>(t[1], t[0], color);
             scene.Set<byte>(t[1] - 1, t[0], color);
             scene.Set<byte>(t[1] + 1, t[0], color);
@@ -146,8 +143,7 @@ namespace OpenCvSharpDemo
 
             using (new Window("src image", scene))
             using (new Window("dst image", obj))
-            using (new Window("error image x", lc.GradientsX))
-            using (new Window("error image y", lc.GradientsY))
+
             {
                 Cv2.WaitKey();
             }

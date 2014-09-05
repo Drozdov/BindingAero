@@ -30,9 +30,17 @@ namespace OpenCvSharpDemo
                     var e = img2.At<byte>(y, x) - img1.At<byte>(y + t[1], x + t[0]);
                     errorImg.Set<byte>(y - diff, x - diff, (byte) (127 - Math.Abs(e)));
                     // Accumulate the matrix entries
-                    double gx = 0.5 * (img2.At<byte>(y, x + diff) - img2.At<byte>(y, x - diff));
-                    double gy = 0.5 * (img2.At<byte>(y + diff, x) - img2.At<byte>(y - diff, x));
-
+                    double gx, gy;
+                    if (!useOriginGradients)
+                    {
+                        gx = 0.5 * (img1.At<byte>(y + t[1], x + diff + t[0]) - img1.At<byte>(y + t[1], x - diff + t[0]));
+                        gy = 0.5 * (img1.At<byte>(y + diff + t[1], x + t[0]) - img1.At<byte>(y - diff + t[1], x + t[0]));
+                    }
+                    else
+                    {
+                        gx = 0.5 * (img2.At<byte>(y, x + diff) - img2.At<byte>(y, x - diff));
+                        gy = 0.5 * (img2.At<byte>(y + diff, x) - img2.At<byte>(y - diff, x));
+                    }
                     gradientsX.Set<byte>(y - diff, x - diff, (byte)(gx / 2 + 63));
                     gradientsY.Set<byte>(y - diff, x - diff, (byte)(gy / 2 + 63));
 
@@ -47,6 +55,8 @@ namespace OpenCvSharpDemo
             return new int[] { t[0] + t0, t[1] + t1 };
         }
 
+        bool useOriginGradients = false;
+        public bool UseOriginGradients { set { this.useOriginGradients = value; } }
 
         private Mat img1, img2;
         public Mat ImgScene {
@@ -109,9 +119,11 @@ namespace OpenCvSharpDemo
                 if (Math.Abs(diff[0]) > Math.Abs(diff[1]))
                 {
                     diff[0] = diff[0] > 0 ? 1 : -1;
+                    diff[1] = 0;
                 }
                 else if (diff[1] > 0)
                 {
+                    diff[0] = 0;
                     diff[1] = diff[1] > 0 ? 1 : -1;
                 }
                 else
