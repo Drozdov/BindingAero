@@ -11,7 +11,7 @@ namespace OpenCvSharpDemo
 {
     class Program
     {
-        static bool Eq(int[] arr1, int[] arr2)
+        static bool Eq(double[] arr1, double[] arr2)
         {
             for (int i = 0; i < arr1.Length; i++)
             {
@@ -21,54 +21,90 @@ namespace OpenCvSharpDemo
             return true;
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] arg)
         {
-            var lc = new LucasKanade();
+            //var lc = new LucasKanadeAlgo();
+            var lc = new LucasKanadeAffine();
             lc.UseOriginGradients = false;
 
-            Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
+            //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
+            //Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
+            Mat scene = new Mat("../../../toksovo_scene.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../toksovo_obj.png", LoadMode.GrayScale);
+
+            //MakeEqualBright(scene, obj);
+
+            /*CvPoint2D32f[] srcPnt = new CvPoint2D32f[3];
+            CvPoint2D32f[] dstPnt = new CvPoint2D32f[3];
+                srcPnt[0] = new CvPoint2D32f(200.0f, 200.0f);
+                srcPnt[1] = new CvPoint2D32f(250.0f, 200.0f);
+                srcPnt[2] = new CvPoint2D32f(200.0f, 100.0f);
+                dstPnt[0] = new CvPoint2D32f(300.0f, 100.0f);
+                dstPnt[1] = new CvPoint2D32f(300.0f, 50.0f);
+                dstPnt[2] = new CvPoint2D32f(200.0f, 100.0f);
+                using (CvMat mapMatrix = Cv.GetAffineTransform(srcPnt, dstPnt))
+                {
+                    var img = scene.ToIplImage();
+
+                    img.WarpAffine(mapMatrix, new Size());
+                }*/
 
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-            int[] t = new int[] { 150, 200 };
-            int[] d = lc.LucasKanadeStep(t, 100);
+            var t = new double[] { 240, 20, -0.2, 0.15 };//-1, 1};
+            //var d = lc.LucasKanadeStep(t, 100);
+
 
             byte color = 0;
-
-            int[] p;
+            
+            double[] p;
             
 #if true
-            for (double scale = 16; scale > 0; scale -= 5)
+            int diff = lc.ImgsDiff(t);
+            Console.WriteLine(diff);
+            Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
+
+            foreach (int scale in new int[] { 100, 30, 5, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
             {
+                
                 lc.Scale = scale;
                 Console.WriteLine("scale = " + scale);
-                while ((p = lc.LucasKanadeStepNorm(t)) != null)
-                {
-                    t = p;
-                    scene.Set<byte>(t[1], t[0], color);
-                    scene.Set<byte>(t[1] - 1, t[0], color);
-                    scene.Set<byte>(t[1] + 1, t[0], color);
-                    scene.Set<byte>(t[1], t[0] - 1, color);
-                    scene.Set<byte>(t[1], t[0] + 1, color);
-                    scene.Set<byte>(t[1] - 2, t[0], color);
-                    scene.Set<byte>(t[1] + 2, t[0], color);
-                    scene.Set<byte>(t[1], t[0] - 2, color);
-                    scene.Set<byte>(t[1], t[0] + 2, color);
-                    scene.Set<byte>(t[1] - 3, t[0], color);
-                    scene.Set<byte>(t[1] + 3, t[0], color);
-                    scene.Set<byte>(t[1], t[0] - 3, color);
-                    scene.Set<byte>(t[1], t[0] + 3, color);
-                    using (new Window("src image", scene))
-                    using (new Window("obj image", obj))
-                    using (new Window("gr x", lc.GradientsX))
-                    using (new Window("gr y", lc.GradientsY))
-                    using (new Window("error", lc.ErrorImg))
+                for (int i = 0; i < 10; i++)
+                //while ((p = lc.LucasKanadeStep(t)) != null)
                     {
-                        Cv2.WaitKey();
+                        p = lc.LucasKanadeStepAutoScale(t, scale);
+                        Console.WriteLine(lc.ImgsDiff(p));
+                        var diff0 = lc.ImgsDiff(p);
+                        if (Eq(p, t))// || diff0 - diff > -1000)
+                            break;
+                        diff = diff0;
+                        t = p;
+
+
+                        /*scene.Set<byte>(t[1], t[0], color);
+                        scene.Set<byte>(t[1] - 1, t[0], color);
+                        scene.Set<byte>(t[1] + 1, t[0], color);
+                        scene.Set<byte>(t[1], t[0] - 1, color);
+                        scene.Set<byte>(t[1], t[0] + 1, color);
+                        scene.Set<byte>(t[1] - 2, t[0], color);
+                        scene.Set<byte>(t[1] + 2, t[0], color);
+                        scene.Set<byte>(t[1], t[0] - 2, color);
+                        scene.Set<byte>(t[1], t[0] + 2, color);
+                        scene.Set<byte>(t[1] - 3, t[0], color);
+                        scene.Set<byte>(t[1] + 3, t[0], color);
+                        scene.Set<byte>(t[1], t[0] - 3, color);
+                        scene.Set<byte>(t[1], t[0] + 3, color);*/
+                        using (new Window("src image", scene))
+                        using (new Window("obj image", obj))
+                        using (new Window("gr x", lc.GradientsX))
+                        using (new Window("gr y", lc.GradientsY))
+                        //using (new Window("error", lc.ErrorImg))
+                        {
+                            Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
+                            //Cv2.WaitKey();
+                        }
                     }
-                }
             }
 
 #else
@@ -99,7 +135,9 @@ namespace OpenCvSharpDemo
 
                     using (new Window("src image", scene))
                     using (new Window("obj image", obj))
-                    using (new Window("error", lc.ErrorImg))
+                    using (new Window("gr x", lc.GradientsX))
+                    using (new Window("gr y", lc.GradientsY))
+                    //using (new Window("error", lc.ErrorImg))
                     {
                         Cv2.WaitKey();
                     }
@@ -110,7 +148,9 @@ namespace OpenCvSharpDemo
                     Console.WriteLine("Scale = " + scale);
                     using (new Window("src image", scene))
                     using (new Window("obj image", obj))
-                    using (new Window("error", lc.ErrorImg))
+                    using (new Window("gr x", lc.GradientsX))
+                    using (new Window("gr y", lc.GradientsY))
+                    //using (new Window("error", lc.ErrorImg))
                     {
                         Cv2.WaitKey();
                     }
@@ -127,7 +167,7 @@ namespace OpenCvSharpDemo
             }
 #endif
             color = 255;
-            scene.Set<byte>(t[1], t[0], color);
+            /*scene.Set<byte>(t[1], t[0], color);
             scene.Set<byte>(t[1] - 1, t[0], color);
             scene.Set<byte>(t[1] + 1, t[0], color);
             scene.Set<byte>(t[1], t[0] - 1, color);
@@ -139,12 +179,13 @@ namespace OpenCvSharpDemo
             scene.Set<byte>(t[1] - 3, t[0], color);
             scene.Set<byte>(t[1] + 3, t[0], color);
             scene.Set<byte>(t[1], t[0] - 3, color);
-            scene.Set<byte>(t[1], t[0] + 3, color);
+            scene.Set<byte>(t[1], t[0] + 3, color);*/
 
             using (new Window("src image", scene))
             using (new Window("dst image", obj))
 
             {
+                Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
                 Cv2.WaitKey();
             }
 
@@ -181,6 +222,47 @@ namespace OpenCvSharpDemo
             Cv.ReleaseImage(src);
             Cv.ReleaseImage(dst);*/
 
+        }
+
+        static void MakeEqualBright(Mat img1, Mat img2)
+        {
+            int sum1 = 0, sum2 = 0;
+            for (int i = 0; i < img1.Width; i++)
+            {
+                for (int j = 0; j < img1.Height; j++)
+                {
+                    sum1 += img1.Get<byte>(j, i);
+                }
+            }
+            for (int i = 0; i < img2.Width; i++)
+            {
+                for (int j = 0; j < img2.Height; j++)
+                {
+                    sum2 += img2.Get<byte>(j, i);
+                }
+            }
+            double average1 = 1.0 * sum1 / (img1.Width * img1.Height);
+            double average2 = 1.0 * sum2 / (img2.Width * img2.Height);
+            if (average2 > average1)
+            {
+                for (int i = 0; i < img2.Width; i++)
+                {
+                    for (int j = 0; j < img2.Height; j++)
+                    {
+                        img2.Set<byte>(j, i, (byte)(Math.Min(255, img2.Get<byte>(j, i) * average1 / average2)));
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < img1.Width; i++)
+                {
+                    for (int j = 0; j < img1.Height; j++)
+                    {
+                        img1.Set<byte>(j, i, (byte)(Math.Min(255, img1.Get<byte>(j, i) * average2 / average1)));
+                    }
+                }
+            }
         }
     }
 }
