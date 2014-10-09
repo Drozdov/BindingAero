@@ -10,16 +10,27 @@ namespace OpenCvSharpDemo
     class LucasKanadeAlgo
     {
         protected Mat imgScene, imgObj;
+        protected Mat imgSceneOrig, imgObjOrig;
         public Mat ImgScene
         {
-            get { return imgScene; }
-            set { imgScene = value; }
+            get { return imgSceneOrig; }
+            set
+            {
+                imgScene = value;
+                imgSceneOrig = value;
+                pyramidLevel = 1;
+            }
         }
 
         public Mat ImgObj
         {
-            get { return imgObj; }
-            set { imgObj = value; }
+            get { return imgObjOrig; }
+            set
+            {
+                imgObj = value;
+                imgObjOrig = value;
+                pyramidLevel = 1;
+            }
         }
 
         public virtual Func<int, int, double[,]> Jacobian
@@ -42,30 +53,53 @@ namespace OpenCvSharpDemo
             }
         }
 
-        protected void Translate(int x0, int y0, out int x, out int y)
+        protected void Translate(int x0, int y0, out int x, out int y, bool orig = true)
         {
-            x = Translate(x0, y0, 0);
-            y = Translate(x0, y0, 1);
+            x = Translate(x0, y0, 0, orig);
+            y = Translate(x0, y0, 1, orig);
         }
 
-        protected int Translate(int x0, int y0, int dim)
+        protected int Translate(int x0, int y0, int dim, bool orig)
         {
             var mat = Matrix;
-            return (int) (x0 * mat[dim, 0] + y0 * mat[dim, 1] + mat[dim, 2]);
+            return (int) (x0 * mat[dim, 0] + y0 * mat[dim, 1] + mat[dim, 2] / (orig ? 1 : pyramidLevel));
         }
 
+        protected int pyramidLevel = 1;
+        public int PyramidLevel
+        {
+            set
+            {
+                pyramidLevel = value;
+                var size = imgObjOrig.Size();
+                imgObj = imgObjOrig.Resize(new Size(size.Width / pyramidLevel, size.Height / pyramidLevel));
+                size = imgSceneOrig.Size();
+                imgScene = imgSceneOrig.Resize(new Size(size.Width / pyramidLevel, size.Height / pyramidLevel));
+            }
+        }
+
+        private int pixelSize = 1;
         protected Mat Warped
         {
             get
             {
-                Mat res = new Mat(imgObj.Size(), MatType.CV_8U);
+                Mat res = new Mat(new Size(imgObj.Size().Width / pixelSize, imgObj.Size().Height / pixelSize), MatType.CV_8U);
                 int x, y;
-                for (int y0 = 0; y0 < imgObj.Height; y0++)
+                for (int y0 = 0; y0 < imgObj.Height; y0 += pixelSize)
                 {
-                    for (int x0 = 0; x0 < imgObj.Width; x0++)
+                    for (int x0 = 0; x0 < imgObj.Width; x0 += pixelSize)
                     {
-                        Translate(x0, y0, out x, out y);
-                        res.Set<byte>(y0, x0, imgScene.Get<byte>(y, x));
+                        int value = 0;
+                        for (int y1 = y0; y1 < y0 + pixelSize; y1++)
+                        {
+                            for (int x1 = x0; x1 < x0 + pixelSize; x1++)
+                            {
+                                Translate(x1, y1, out x, out y, false);
+                                value += imgScene.Get<byte>(y, x);
+                            }
+                        }
+                            
+                        res.Set<byte>(y0, x0, (byte) (value / (pixelSize * pixelSize)));
                     }
                 }
                 return res;
@@ -81,22 +115,23 @@ namespace OpenCvSharpDemo
             gradientsX = new Mat(new Size(mat.Width, mat.Height), MatType.CV_8SC1);
             gradientsY = new Mat(new Size(mat.Width, mat.Height), MatType.CV_8SC1);
             var res = new int[mat.Height, mat.Width, 2];
+            int diff = 1;
             for (int y = 0; y < mat.Height; y++)
             {
                 for (int x = 0; x < mat.Width; x++)
                 {
-                    if (x == 0)
-                        res[y, x, 0] = (mat.At<byte>(y, x + 1) - mat.At<byte>(y, x));
-                    else if (x == mat.Width - 1)
-                        res[y, x, 0] = (mat.At<byte>(y, x) - mat.At<byte>(y, x - 1));
+                    if (x < diff)
+                        res[y, x, 0] = (mat.At<byte>(y, x + diff) - mat.At<byte>(y, x)) / diff;
+                    else if (x > mat.Width - diff)
+                        res[y, x, 0] = (mat.At<byte>(y, x) - mat.At<byte>(y, x - diff)) / diff;
                     else
-                        res[y, x, 0] = (mat.At<byte>(y, x + 1) - mat.At<byte>(y, x - 1)) / 2;
-                    if (y == 0)
-                        res[y, x, 1] = (mat.At<byte>(y + 1, x) - mat.At<byte>(y, x));
-                    else if (y == mat.Height)
-                        res[y, x, 1] = (mat.At<byte>(y, x) - mat.At<byte>(y - 1, x));
+                        res[y, x, 0] = (mat.At<byte>(y, x + diff) - mat.At<byte>(y, x - diff)) / (2 * diff);
+                    if (y < diff)
+                        res[y, x, 1] = (mat.At<byte>(y + diff, x) - mat.At<byte>(y, x)) / diff;
+                    else if (y > mat.Height - diff)
+                        res[y, x, 1] = (mat.At<byte>(y, x) - mat.At<byte>(y - diff, x)) / diff;
                     else
-                        res[y, x, 1] = (mat.At<byte>(y + 1, x) - mat.At<byte>(y - 1, x)) / 2;
+                        res[y, x, 1] = (mat.At<byte>(y + diff, x) - mat.At<byte>(y - diff, x)) / (2 * diff);
 
                     gradientsX.Set<byte>(y, x, (byte)(res[y, x, 0] / 2 + 63));
                     gradientsY.Set<byte>(y, x, (byte)(res[y, x, 1] / 2 + 63));
@@ -104,7 +139,6 @@ namespace OpenCvSharpDemo
             }
             return res;
         }
-
 
         double[] GetDp()
         {
@@ -135,17 +169,23 @@ namespace OpenCvSharpDemo
                     }
                 }
             }
-            var hessianInv = hessian.Inv();
-            double[] res = new double[dim];
-            for (int i = 0; i < dim; i++)
+            try
             {
-                for (int j = 0; j < dim; j++)
+                var hessianInv = hessian.Inv();
+                double[] res = new double[dim];
+                for (int i = 0; i < dim; i++)
                 {
-                    res[i] += /*  (i >= 2 ? 20 : 1) * */ hessianInv.Get<double>(i, j) * b[j];
+                    for (int j = 0; j < dim; j++)
+                    {
+                        res[i] += /*  (i >= 2 ? 20 : 1) * */ hessianInv.Get<double>(i, j) * b[j];
+                    }
                 }
+                return res;
+            } catch
+            {
+                return null;
             }
             //Console.WriteLine(res[2] + " " + res[3]);
-            return res;
         }
 
         private double scale = 10;
@@ -263,16 +303,25 @@ namespace OpenCvSharpDemo
         public bool UseOriginGradients { set { this.useOriginGradients = value; } }
 
         public int ImgsDiff(double[] p) {
-            this.p = p;
             int res = 0;
-            int x, y;
-            for (int y0 = 0; y0 < imgObj.Height; y0++)
+            try
             {
-                for (int x0 = 0; x0 < imgObj.Width; x0++)
+                this.p = p;
+                int x, y;
+                for (int y0 = 0; y0 < imgObj.Height; y0++)
                 {
-                    Translate(x0, y0, out x, out y);
-                    res += Math.Abs(imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x));
+                    for (int x0 = 0; x0 < imgObj.Width; x0++)
+                    {
+                        Translate(x0, y0, out x, out y, false);
+                        if (x < 0 || x >= imgScene.Width || y < 0 || y >= imgScene.Height)
+                            return int.MaxValue;
+                        res += Math.Abs(imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x));
+                    }
                 }
+            }
+            catch
+            { 
+                return int.MaxValue;
             }
             return res;
         }
@@ -283,8 +332,8 @@ namespace OpenCvSharpDemo
             {
                 CvPoint2D32f[] srcPnt = new CvPoint2D32f[3];
                 CvPoint2D32f[] dstPnt = new CvPoint2D32f[3];
-                int[] x = new int[] { 0, imgObj.Width - 1, 0 };
-                int[] y = new int[] { 0, 0, imgObj.Height - 1 };
+                int[] x = new int[] { 0, imgObjOrig.Width - 1, 0 };
+                int[] y = new int[] { 0, 0, imgObjOrig.Height - 1 };
                 for (int i = 0; i < 3; i++)
                 {
                     srcPnt[i] = new CvPoint2D32f(x[i], y[i]);
