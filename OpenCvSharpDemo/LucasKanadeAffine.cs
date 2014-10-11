@@ -54,6 +54,7 @@ namespace OpenCvSharpDemo
             {
                 //return (x, y) => new double[,] { { 1, 0, x }, { 0, 1, y } };
                 return (x, y) => new double[,] { { 1 - p[2] / 2, 0, x - p[0] / 2}, { 0, 1 - p[2] / 2, y - p[1] / 2 } };
+                //return (x, y) => new double[,] { { 1 - p[2] / 10, 0, x / 5 - p[0] / 10 }, { 0, 1 - p[2] / 10, y / 5 - p[1] / 10 } };
             }
         }
 
@@ -63,6 +64,7 @@ namespace OpenCvSharpDemo
             {
                 //return new double[,] { { 1 + p[2], 0, p[0] }, { 0, 1 + p[2], p[1] } };
                 return new double[,] { { 1 + p[2], 0, p[0] * (1 - p[2] / 2) }, { 0, 1 + p[2], p[1] * (1 - p[2] / 2) } };
+                //return new double[,] { { 1 + p[2] / 5, 0, p[0] * (1 - p[2] / 10) }, { 0, 1 + p[2] / 5, p[1] * (1 - p[2] / 10) } };
             }
         }
 

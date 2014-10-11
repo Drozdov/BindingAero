@@ -28,14 +28,20 @@ namespace OpenCvSharpDemo
 
             //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
             //Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
-            Mat scene = new Mat("../../../vysotsk_scene.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../vysotsk_obj.png", LoadMode.GrayScale);
+            //Mat scene = new Mat("../../../vysotsk_scene.png", LoadMode.GrayScale);
+            //Mat obj = new Mat("../../../vysotsk_obj.png", LoadMode.GrayScale);
+            //obj = obj.Resize(new Size(obj.Size().Width * 10 / 35, obj.Size().Height * 10 / 35));
+
+            Mat scene = new Mat("../../../toksovo_scene2.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../toksovo_obj.png", LoadMode.GrayScale);
+            
+
 
             MakeEqualBright(scene, obj);
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-            var t = new double[] { 120, 60, -0.45, 0.1, 0, 0};//-0.2, 0.15 };//-1, 1};
+            var t = new double[] { 220, 60, 0, 0.1, 0, 0};//-0.2, 0.15 };//-1, 1};
             //var d = lc.LucasKanadeStep(t, 100);
             
             double[] p;
@@ -44,11 +50,11 @@ namespace OpenCvSharpDemo
             Console.WriteLine(diff);
             Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
             lc.PyramidLevel = 4;
-            foreach (int pyramid in new int[] { 70, 25, 10, 5 })
+            foreach (int pyramid in new int[] { 4, 2, 1 })
             {
 
                 Console.WriteLine("Pyramid = " + pyramid);
-                foreach (int scale in new int[] { 800, 400, 200, 100, 50, 30, 5, 3, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
+                foreach (int scale in new int[] { 64, 32, 8, 4, 2, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
                 {
                     lc.PyramidLevel = pyramid;
                     //lc.Scale = scale;
@@ -64,6 +70,7 @@ namespace OpenCvSharpDemo
                         var diff0 = lc.ImgsDiff(p);
                         if (p == null || Eq(p, t))// || diff0 < diff)
                             break;
+
                         diff = diff0;
                         t = p;
 

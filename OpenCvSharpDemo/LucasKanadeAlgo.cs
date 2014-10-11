@@ -245,7 +245,7 @@ namespace OpenCvSharpDemo
             double[][] variants = new double[10][];
             double[] result = null;
             int min = int.MaxValue;
-            for (int j = 0; j < 10; j++)
+            for (int j = 0; j < 3; j++)
             {
                 var res = new double[res0.Length];
                 for (int i = 0; i < res0.Length; i++)
