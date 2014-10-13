@@ -41,7 +41,7 @@ namespace OpenCvSharpDemo
             }
         }
 
-        public int Dimension { get { return Jacobian(0, 0).GetLength(1); } }
+        public virtual int Dimension { get { return Jacobian(0, 0).GetLength(1); } }
 
         protected double[] p;
 
@@ -242,15 +242,14 @@ namespace OpenCvSharpDemo
             }
             p = t;//.Select(x => (double) x).ToArray();
             var res0 = GetDp();
-            double[][] variants = new double[10][];
             double[] result = null;
             int min = int.MaxValue;
             for (int j = 0; j < 3; j++)
             {
-                var res = new double[res0.Length];
-                for (int i = 0; i < res0.Length; i++)
+                var res = new double[p.Length];
+                for (int i = 0; i < res.Length; i++)
                 {
-                    res[i] = t[i] + (res0[i] * step * j);
+                    res[i] = t[i] + (i < res0.Length ? (res0[i] * step * j) : 0);
                 }
                 int min0 = ImgsDiff(res);
                 if (min0 < min)
@@ -307,6 +306,9 @@ namespace OpenCvSharpDemo
             try
             {
                 this.p = p;
+	            int w = imgObjOrig.Size().Width, h = imgObjOrig.Size().Height;
+	            if (fail(0, 0) || fail(w, 0) || fail(0, h) || fail(w, h))
+		            return int.MaxValue;
                 int x, y;
                 for (int y0 = 0; y0 < imgObj.Height; y0++)
                 {
@@ -319,14 +321,21 @@ namespace OpenCvSharpDemo
                     }
                 }
             }
-            catch
+            catch (Exception e)
             { 
                 return int.MaxValue;
             }
             return res;
         }
 
-        public virtual CvPoint2D32f[][] PointsConvertation
+	    private bool fail(int x0, int y0)
+	    {
+		    int x, y;
+		    Translate(x0, y0, out x, out y);
+		    return x < 0 || x >= imgSceneOrig.Width || y < 0 || y >= imgSceneOrig.Height;
+	    }
+
+	    public virtual CvPoint2D32f[][] PointsConvertation
         {
             get
             {

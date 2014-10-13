@@ -23,7 +23,7 @@ namespace OpenCvSharpDemo
 
         public static void Main(string[] arg)
         {
-            var lc = new LucasKanadeScale();
+            LucasKanadeAlgo lc = new LucasKanadeTranslate();
             lc.UseOriginGradients = false;
 
             //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
@@ -32,16 +32,17 @@ namespace OpenCvSharpDemo
             //Mat obj = new Mat("../../../vysotsk_obj.png", LoadMode.GrayScale);
             //obj = obj.Resize(new Size(obj.Size().Width * 10 / 35, obj.Size().Height * 10 / 35));
 
-            Mat scene = new Mat("../../../toksovo_scene2.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../toksovo_obj.png", LoadMode.GrayScale);
-            
+            Mat scene = new Mat("../../../abrau_scene2.png");
+            Mat obj = new Mat("../../../abrau_obj2.png");
 
+	        scene = scene.ExtractChannel(1);
+	        obj = obj.ExtractChannel(1);
 
-            MakeEqualBright(scene, obj);
+	        MakeEqualBright(scene, obj);
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-            var t = new double[] { 220, 60, 0, 0.1, 0, 0};//-0.2, 0.15 };//-1, 1};
+            var t = new double[] { 320, 50, 0, 1, 0, 0};//-0.2, 0.15 };//-1, 1};
             //var d = lc.LucasKanadeStep(t, 100);
             
             double[] p;
@@ -50,13 +51,19 @@ namespace OpenCvSharpDemo
             Console.WriteLine(diff);
             Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
             lc.PyramidLevel = 4;
-            foreach (int pyramid in new int[] { 4, 2, 1 })
+            foreach (int pyramid in new int[] { 64, 32, 16, 8, 4, 2, 1 })
             {
-
+				if (pyramid == 4)
+				{
+					lc = new LucasKanadeSimilarity();
+					lc.ImgScene = scene;
+					lc.ImgObj = obj;
+				}
                 Console.WriteLine("Pyramid = " + pyramid);
-                foreach (int scale in new int[] { 64, 32, 8, 4, 2, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
+				lc.PyramidLevel = pyramid;
+                foreach (int scale in new int[] { 128, 64, 32, 16, 8, 4, 2, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
                 {
-                    lc.PyramidLevel = pyramid;
+                    
                     //lc.Scale = scale;
                     Console.WriteLine("scale = " + scale);
                     diff = int.MaxValue;
