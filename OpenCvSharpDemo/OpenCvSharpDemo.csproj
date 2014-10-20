@@ -101,6 +101,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Affine.cs" />
+    <Compile Include="IStitcher.cs" />
+    <Compile Include="KeyPointStitcher.cs" />
     <Compile Include="LucasKanade.cs" />
     <Compile Include="LucasKanadeAffine.cs" />
     <Compile Include="LucasKanadeAlgo.cs" />

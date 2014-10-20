@@ -41,6 +41,12 @@ namespace OpenCvSharpDemo
             }
         }
 
+		// TODO: use it
+	    protected virtual int[] Indexes
+	    {
+		    get { return new int[]{0, 1}; }
+	    }
+
         public virtual int Dimension { get { return Jacobian(0, 0).GetLength(1); } }
 
         protected double[] p;
@@ -177,7 +183,7 @@ namespace OpenCvSharpDemo
                 {
                     for (int j = 0; j < dim; j++)
                     {
-                        res[i] += /*  (i >= 2 ? 20 : 1) * */ hessianInv.Get<double>(i, j) * b[j];
+                        res[i] += hessianInv.Get<double>(i, j) * b[j];
                     }
                 }
                 return res;

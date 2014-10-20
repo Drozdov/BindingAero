@@ -23,26 +23,35 @@ namespace OpenCvSharpDemo
 
         public static void Main(string[] arg)
         {
+	        
             LucasKanadeAlgo lc = new LucasKanadeTranslate();
             lc.UseOriginGradients = false;
 
             //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
             //Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
-            //Mat scene = new Mat("../../../vysotsk_scene.png", LoadMode.GrayScale);
-            //Mat obj = new Mat("../../../vysotsk_obj.png", LoadMode.GrayScale);
+            Mat scene = new Mat("../../../man_scene.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../man_obj.png", LoadMode.GrayScale);
             //obj = obj.Resize(new Size(obj.Size().Width * 10 / 35, obj.Size().Height * 10 / 35));
 
-            Mat scene = new Mat("../../../abrau_scene2.png");
-            Mat obj = new Mat("../../../abrau_obj2.png");
+            //Mat scene = new Mat("../../../abrau_scene.png");
+            //Mat obj = new Mat("../../../abrau_obj.png");
 
-	        scene = scene.ExtractChannel(1);
-	        obj = obj.ExtractChannel(1);
+	        //scene = scene.ExtractChannel(1);
+	        //obj = obj.ExtractChannel(1);
 
 	        MakeEqualBright(scene, obj);
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-            var t = new double[] { 320, 50, 0, 1, 0, 0};//-0.2, 0.15 };//-1, 1};
+	        /*var h = new double[,] {{1, 0, 200}, {0, 1, 60}, {0, 0, 1}};
+			Affine.DrawImageOver(scene, obj, h);
+			h = new KeyPointStitcher(true).Stitch(scene, obj, h);
+
+			Affine.DrawImageOver(scene, obj, h);
+			*/
+			//return;
+
+            var t = new double[] { 180, 70, 0.2, 0.6, 0, 0};//-0.2, 0.15 };//-1, 1};
             //var d = lc.LucasKanadeStep(t, 100);
             
             double[] p;
@@ -53,6 +62,12 @@ namespace OpenCvSharpDemo
             lc.PyramidLevel = 4;
             foreach (int pyramid in new int[] { 64, 32, 16, 8, 4, 2, 1 })
             {
+				if (pyramid == 64)
+				{
+					lc = new LucasKanadeEuclidean();
+					lc.ImgScene = scene;
+					lc.ImgObj = obj;
+				}
 				if (pyramid == 4)
 				{
 					lc = new LucasKanadeSimilarity();

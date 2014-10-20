@@ -62,5 +62,27 @@ namespace OpenCvSharpDemo
                 }
             }
         }
+
+	    public static void DrawImageOver(Mat scene, Mat template, double[,] homography)
+	    {
+		    var h = new CvMat(3, 3, MatrixType.F32C1);
+		    for (int i = 0; i < 3; i++)
+			    for (int j = 0; j < 3; j++)
+				    h.Set2D(i, j, homography[i, j]);
+
+		    using (IplImage srcImg = template.ToIplImage())
+		    using (IplImage dstImg = scene.ToIplImage())
+		    {
+			    Cv.WarpPerspective(srcImg, dstImg, h, Interpolation.Linear);
+			    //Cv.WarpAffine(srcImg, dstImg, mapMatrix, Interpolation.Linear);// | Interpolation.FillOutliers);
+			    using (new CvWindow("src", srcImg))
+			    using (new CvWindow("dst", dstImg))
+			    {
+				    Cv.WaitKey(0);
+			    }
+
+		    }
+	    }
+
     }
 }
