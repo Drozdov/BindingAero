@@ -48,7 +48,7 @@ namespace OpenCvSharpDemo
 		}
 	}
 
-	internal class LucasKanadeScale : LucasKanadeAlgo
+	/*internal class LucasKanadeScale : LucasKanadeAlgo
 	{
 		public override Func<int, int, double[,]> Jacobian
 		{
@@ -69,7 +69,7 @@ namespace OpenCvSharpDemo
 				//return new double[,] { { 1 + p[2] / 5, 0, p[0] * (1 - p[2] / 10) }, { 0, 1 + p[2] / 5, p[1] * (1 - p[2] / 10) } };
 			}
 		}
-	}
+	}*/
 
 	internal class LucasKanadeSimilarity : LucasKanadeAlgo
 	{
@@ -122,18 +122,25 @@ namespace OpenCvSharpDemo
 		}
 	}
 
-	internal class LucasKanadeEuclidean : LucasKanadeSimilarity
-	{
-		public override Func<int, int, double[,]> Jacobian
-		{
-			get { return (x, y) => new double[,] { { 1, 0, -Sin * x * Alpha - Cos * y * Alpha }, { 0, 1, Cos * x * Alpha - Sin * y * Alpha } }; }
-		}
+    internal class LucasKanadeEuclidean : LucasKanadeSimilarity
+    {
+        public override Func<int, int, double[,]> Jacobian
+        {
+            get { return (x, y) => new double[,] { { 1, 0, -Sin * x * Alpha - Cos * y * Alpha }, { 0, 1, Cos * x * Alpha - Sin * y * Alpha } }; }
+        }
 
-		public override int Dimension
-		{
-			get { return 3; }
-		}
-	}
+        public override int Dimension { get { return 3; } }
+    }
+
+    internal class LucasKanadeScaleNoMove : LucasKanadeSimilarity
+    {
+        public override Func<int, int, double[,]> Jacobian
+        {
+            get { return (x, y) => new double[,] { { x * Cos - y * Sin }, { y * Cos - x * Sin } }; }
+        }
+
+        protected override int[] Indices { get { return new int[] { 3 }; } }
+    }
 
 	internal class LucasKanadeTranslate : LucasKanadeEuclidean
 	{

@@ -29,8 +29,8 @@ namespace OpenCvSharpDemo
 
             //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
             //Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
-            Mat scene = new Mat("../../../man_scene.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../man_obj.png", LoadMode.GrayScale);
+            Mat scene = new Mat("../../../toksovo_scene.png", LoadMode.GrayScale);
+            Mat obj = new Mat("../../../toksovo_obj.png", LoadMode.GrayScale);
             //obj = obj.Resize(new Size(obj.Size().Width * 10 / 35, obj.Size().Height * 10 / 35));
 
             //Mat scene = new Mat("../../../abrau_scene.png");
@@ -43,15 +43,15 @@ namespace OpenCvSharpDemo
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-	        /*var h = new double[,] {{1, 0, 200}, {0, 1, 60}, {0, 0, 1}};
+	       /* var h = new double[,] {{1, 0, 200}, {0, 1, 60}, {0, 0, 1}};
 			Affine.DrawImageOver(scene, obj, h);
-			h = new KeyPointStitcher(true).Stitch(scene, obj, h);
+			h = new KeyPointStitcher(true).Stitch(scene, obj);
 
 			Affine.DrawImageOver(scene, obj, h);
-			*/
-			//return;
+			
+			return;*/
 
-            var t = new double[] { 180, 70, 0.2, 0.6, 0, 0};//-0.2, 0.15 };//-1, 1};
+            var t = new double[] { 180, 50, 0.2, 1, 0, 0};//-0.2, 0.15 };//-1, 1};
             //var d = lc.LucasKanadeStep(t, 100);
             
             double[] p;
@@ -59,7 +59,11 @@ namespace OpenCvSharpDemo
             int diff = lc.ImgsDiff(t);
             Console.WriteLine(diff);
             Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-            lc.PyramidLevel = 4;
+
+            var lccc = new LucasKanadeScaleNoMove();
+            lccc.ImgScene = scene;
+            lccc.ImgObj = obj;
+
             foreach (int pyramid in new int[] { 64, 32, 16, 8, 4, 2, 1 })
             {
 				if (pyramid == 64)
@@ -76,35 +80,40 @@ namespace OpenCvSharpDemo
 				}
                 Console.WriteLine("Pyramid = " + pyramid);
 				lc.PyramidLevel = pyramid;
+                lccc.PyramidLevel = pyramid;
                 foreach (int scale in new int[] { 128, 64, 32, 16, 8, 4, 2, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
                 {
-                    
-                    //lc.Scale = scale;
-                    Console.WriteLine("scale = " + scale);
-                    diff = int.MaxValue;
-                    for (int i = 0; /* i < 10 */; i++)
-                    //while ((p = lc.LucasKanadeStep(t)) != null)
+                    foreach (var lcc in new LucasKanadeAlgo[] { lc/*, lccc*/ })
                     {
-                        lc.Scale = scale;
-                        p = lc.LucasKanadeStepAutoScale(t, scale);
-                        //p = lc.LucasKanadeStep(t);
-                        Console.WriteLine(lc.ImgsDiff(p));
-                        var diff0 = lc.ImgsDiff(p);
-                        if (p == null || Eq(p, t))// || diff0 < diff)
-                            break;
-
-                        diff = diff0;
-                        t = p;
 
 
-                        using (new Window("src image", scene))
-                        using (new Window("obj image", obj))
-                        using (new Window("gr x", lc.GradientsX))
-                        using (new Window("gr y", lc.GradientsY))
-                        //using (new Window("error", lc.ErrorImg))
+                        //lc.Scale = scale;
+                        Console.WriteLine("scale = " + scale);
+                        diff = int.MaxValue;
+                        for (int i = 0; /* i < 10 */; i++)
+                        //while ((p = lc.LucasKanadeStep(t)) != null)
                         {
-                            Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-                            //Cv2.WaitKey();
+                            lcc.Scale = scale;
+                            p = lcc.LucasKanadeStepAutoScale(t, scale);
+                            //p = lc.LucasKanadeStep(t);
+                            Console.WriteLine(lcc.ImgsDiff(p));
+                            var diff0 = lcc.ImgsDiff(p);
+                            if (p == null || Eq(p, t))// || diff0 < diff)
+                                break;
+
+                            diff = diff0;
+                            t = p;
+
+
+                            using (new Window("src image", scene))
+                            using (new Window("obj image", obj))
+                            using (new Window("gr x", lcc.GradientsX))
+                            using (new Window("gr y", lcc.GradientsY))
+                            //using (new Window("error", lc.ErrorImg))
+                            {
+                                Affine.DrawImageOver(scene, obj, lcc.PointsConvertation);
+                                //Cv2.WaitKey();
+                            }
                         }
                     }
                 }
