@@ -27,10 +27,11 @@ namespace OpenCvSharpDemo
 		public double[,] Stitch(Mat imgScene, Mat imgObject, double[,] homographyStart)
 		{
 			var sift = new SIFT();
-
+			
 			KeyPoint[] keypointsScene, keypointsObject;
 			var descriptorsScene = new MatOfFloat();
 			var descriptorsObj = new MatOfFloat();
+			
 			sift.Run(imgScene, null, out keypointsScene, descriptorsScene);
 			sift.Run(imgObject, null, out keypointsObject, descriptorsObj);
 
@@ -46,13 +47,15 @@ namespace OpenCvSharpDemo
 					var p = keypointsObject[match.QueryIdx].Pt;
 					var point0 = PerspectiveTransform(p, homographyStart);
 					var p1 = keypointsScene[match.TrainIdx].Pt;
-					nmatches[j++] = new DMatch(match.QueryIdx, match.TrainIdx, match.Distance + (float)point0.DistanceTo(p1));
+					nmatches[j++] = new DMatch(match.QueryIdx, match.TrainIdx, match.Distance * (300 + (float)point0.DistanceTo(p1)));
 				}
 				matches = nmatches;
 			}
 
-			var min = matches.Min((m) => m.Distance);
-			matches = matches.Where((m) => m.Distance < 3 * min).ToArray();
+			//matches = matches.Where((m) => (keypointsObject[m.QueryIdx].Octave > 1000000)).ToArray();
+
+			var sortedMatches = matches.OrderBy((m) => m.Distance);
+			matches = sortedMatches.Where((m, id) => id < 20).ToArray();
 
 			int n = matches.Count();
 

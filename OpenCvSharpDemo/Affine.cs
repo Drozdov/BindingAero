@@ -70,12 +70,13 @@ namespace OpenCvSharpDemo
 			    for (int j = 0; j < 3; j++)
 				    h.Set2D(i, j, homography[i, j]);
 
-		    using (IplImage srcImg = template.ToIplImage())
+			using (IplImage srcImg = template.ToIplImage())
+			using (IplImage sceneImg = scene.ToIplImage())
 		    using (IplImage dstImg = scene.ToIplImage())
 		    {
 			    Cv.WarpPerspective(srcImg, dstImg, h, Interpolation.Linear);
 			    //Cv.WarpAffine(srcImg, dstImg, mapMatrix, Interpolation.Linear);// | Interpolation.FillOutliers);
-			    using (new CvWindow("src", srcImg))
+			    using (new CvWindow("src", sceneImg))
 			    using (new CvWindow("dst", dstImg))
 			    {
 				    Cv.WaitKey(0);

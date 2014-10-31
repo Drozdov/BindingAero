@@ -21,7 +21,55 @@ namespace OpenCvSharpDemo
             return true;
         }
 
-        public static void Main(string[] arg)
+		public struct Test
+		{
+			private Mat scene, obj;
+			private double[,] homography;
+
+			public Mat Scene { get { return scene; } }
+			public Mat Object { get { return obj; } }
+			public double[,] Homography { get { return homography; } }
+
+			public Test(Mat scene, Mat obj, double[,] h)
+			{
+				this.scene = scene;
+				this.obj = obj;
+				this.homography = h;
+			}
+		}
+
+		static Test test0 = new Test(
+			new Mat("../../../abrau_scenefull.png", LoadMode.GrayScale),
+			Resize(new Mat("../../../abrau_obj.jpg", LoadMode.GrayScale), 6),
+			new double[,] { { 0.32, 0.64, 600 }, { -0.64, 0.32, 750 }, { 0, 0, 1 } }
+			);
+
+		static Test test1 = new Test(
+			new Mat("../../../abrau_scenefull.png", LoadMode.GrayScale),
+			Resize(new Mat("../../../abrau_obj_.jpg", LoadMode.GrayScale), 6), 
+			new double[,] {{0.32, 0.64, 250}, {-0.64, 0.32, 550}, {0, 0, 1}}
+			);
+
+	    private static Test test2 = new Test(
+		    new Mat("../../../abrau_scene2full.png", LoadMode.GrayScale),
+		    Resize(new Mat("../../../abrau_obj2.jpg", LoadMode.GrayScale), 6),
+		    new double[,] {{0.6, 0.5, -100}, {-0.6, 0.5, 600}, {0, 0, 1}}
+		    );
+
+	    private static Test test3 = new Test(
+		    new Mat("../../../abrau_scene3full.png", LoadMode.GrayScale),
+		    Resize(new Mat("../../../abrau_obj3.jpg", LoadMode.GrayScale), 3),
+		    new double[,] {{0, 1, 800}, {-1, 0, 600}, {0, 0, 1}}
+		    );
+
+
+
+	    private static Mat Resize(Mat orig, int times)
+	    {
+		    return orig.Resize(new Size(orig.Width/times, orig.Height/times));
+	    }
+
+	    public static void Main(string[] arg)
         {
 	        
             LucasKanadeAlgo lc = new LucasKanadeTranslate();
@@ -29,8 +77,8 @@ namespace OpenCvSharpDemo
 
             //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
             //Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
-            Mat scene = new Mat("../../../man_scene.png", LoadMode.GrayScale);
-            Mat obj = new Mat("../../../man_obj.png", LoadMode.GrayScale);
+            
+	        //scene = scene.Resize(new Size(scene.Width, scene.Height));
             //obj = obj.Resize(new Size(obj.Size().Width * 10 / 35, obj.Size().Height * 10 / 35));
 
             //Mat scene = new Mat("../../../abrau_scene.png");
@@ -39,19 +87,23 @@ namespace OpenCvSharpDemo
 	        //scene = scene.ExtractChannel(1);
 	        //obj = obj.ExtractChannel(1);
 
+	        Test test = test3;
+	        Mat scene = test.Scene;
+	        Mat obj = test.Object;
+	        var h = test.Homography;
+
 	        MakeEqualBright(scene, obj);
             lc.ImgScene = scene;
             lc.ImgObj = obj;
 
-	        /*var h = new double[,] {{1, 0, 200}, {0, 1, 60}, {0, 0, 1}};
-			Affine.DrawImageOver(scene, obj, h);
+	        Affine.DrawImageOver(scene, obj, h);
 			h = new KeyPointStitcher(true).Stitch(scene, obj, h);
 
 			Affine.DrawImageOver(scene, obj, h);
-			*/
-			//return;
-
-            var t = new double[] { 180, 70, 0.2, 0.6, 0, 0};//-0.2, 0.15 };//-1, 1};
+			
+			return;
+			
+            var t = new double[] { 260, 80, 0, 0.5, 0, 0};//-0.2, 0.15 };//-1, 1};
             //var d = lc.LucasKanadeStep(t, 100);
             
             double[] p;
@@ -59,15 +111,14 @@ namespace OpenCvSharpDemo
             int diff = lc.ImgsDiff(t);
             Console.WriteLine(diff);
             Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-            lc.PyramidLevel = 4;
             foreach (int pyramid in new int[] { 64, 32, 16, 8, 4, 2, 1 })
             {
-				if (pyramid == 64)
+				/*if (pyramid == 64)
 				{
 					lc = new LucasKanadeEuclidean();
 					lc.ImgScene = scene;
 					lc.ImgObj = obj;
-				}
+				}*/
 				if (pyramid == 4)
 				{
 					lc = new LucasKanadeSimilarity();
