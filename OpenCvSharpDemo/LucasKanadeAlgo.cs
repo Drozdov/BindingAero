@@ -42,9 +42,16 @@ namespace OpenCvSharpDemo
         }
 
 		// TODO: use it
-	    protected virtual int[] Indexes
+	    protected virtual int[] Indices
 	    {
-		    get { return new int[]{0, 1}; }
+            get
+            {
+                int dim = Dimension;
+                int[] res = new int[dim];
+                for (int i = 0; i < dim; i++)
+                    res[i] = i;
+                return res;
+            }
 	    }
 
         public virtual int Dimension { get { return Jacobian(0, 0).GetLength(1); } }
@@ -150,7 +157,7 @@ namespace OpenCvSharpDemo
         {
             var warped = Warped;
             var gradient = Gradient(warped);
-            var dim = Dimension;
+            var dim = Indices.Length;
             var hessian = new Mat(new Size(dim, dim), MatType.CV_64F, 0);
             var hes = new int[dim, dim];
             var b = new int[dim];
@@ -178,12 +185,12 @@ namespace OpenCvSharpDemo
             try
             {
                 var hessianInv = hessian.Inv();
-                double[] res = new double[dim];
+                double[] res = new double[Dimension];
                 for (int i = 0; i < dim; i++)
                 {
                     for (int j = 0; j < dim; j++)
                     {
-                        res[i] += hessianInv.Get<double>(i, j) * b[j];
+                        res[Indices[i]] += hessianInv.Get<double>(i, j) * b[j];
                     }
                 }
                 return res;
