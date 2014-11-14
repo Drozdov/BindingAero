@@ -44,6 +44,12 @@ namespace OpenCvSharpDemo
 			new double[,] { { 0.32, 0.64, 600 }, { -0.64, 0.32, 750 }, { 0, 0, 1 } }
 			);
 
+	    /*private static Test test0 = new Test(
+		    Resize(new Mat("../../../abrau_scenefull.png", LoadMode.GrayScale), 2),
+		    Resize(new Mat("../../../abrau_obj.jpg", LoadMode.GrayScale), 12),
+		    new double[,] {{0.32, 0.64, 300}, {-0.64, 0.32, 350}, {0, 0, 1}}
+		    );*/
+
 		static Test test1 = new Test(
 			new Mat("../../../abrau_scenefull.png", LoadMode.GrayScale),
 			Resize(new Mat("../../../abrau_obj_.jpg", LoadMode.GrayScale), 6), 
@@ -53,13 +59,19 @@ namespace OpenCvSharpDemo
 	    private static Test test2 = new Test(
 		    new Mat("../../../abrau_scene2full.png", LoadMode.GrayScale),
 		    Resize(new Mat("../../../abrau_obj2.jpg", LoadMode.GrayScale), 6),
-		    new double[,] {{0.6, 0.5, -100}, {-0.6, 0.5, 600}, {0, 0, 1}}
+		    new double[,] {{0.6, 0.5, 0}, {-0.6, 0.5, 600}, {0, 0, 1}}
 		    );
 
 	    private static Test test3 = new Test(
 		    new Mat("../../../abrau_scene3full.png", LoadMode.GrayScale),
 		    Resize(new Mat("../../../abrau_obj3.jpg", LoadMode.GrayScale), 3),
 		    new double[,] {{0, 1, 800}, {-1, 0, 600}, {0, 0, 1}}
+		    );
+
+	    private static Test test4 = new Test(
+		    new Mat("../../../abrau_scene4full.png", LoadMode.GrayScale),
+		    Resize(new Mat("../../../abrau_obj4.jpg", LoadMode.GrayScale), 3),
+		    new double[,] {{0, 0.9, 400}, {-0.9, 0, 700}, {0, 0, 1}}
 		    );
 
 
@@ -70,11 +82,8 @@ namespace OpenCvSharpDemo
 	    }
 
 	    public static void Main(string[] arg)
-        {
-	        
-            LucasKanadeAlgo lc = new LucasKanadeTranslate();
-            lc.UseOriginGradients = false;
-
+	    {
+		    
             //Mat scene = new Mat("../../../scene.png", LoadMode.GrayScale);
             //Mat obj = new Mat("../../../obj.png", LoadMode.GrayScale);
             
@@ -87,91 +96,106 @@ namespace OpenCvSharpDemo
 	        //scene = scene.ExtractChannel(1);
 	        //obj = obj.ExtractChannel(1);
 
-	        Test test = test3;
-	        Mat scene = test.Scene;
-	        Mat obj = test.Object;
-	        var h = test.Homography;
+		    Mat scene = null, obj = null;
+		    Double[,] h;
 
-	        MakeEqualBright(scene, obj);
-            lc.ImgScene = scene;
-            lc.ImgObj = obj;
+		    foreach (var test in new Test[] {test0, test1, test2, test3, test4})
+		    {
+			    scene = test.Scene;
+			    obj = test.Object;
+			    h = test.Homography;
 
-	        Affine.DrawImageOver(scene, obj, h);
-			h = new KeyPointStitcher(true).Stitch(scene, obj, h);
-
-			Affine.DrawImageOver(scene, obj, h);
-			
-			return;
-			
-            var t = new double[] { 260, 80, 0, 0.5, 0, 0};//-0.2, 0.15 };//-1, 1};
-            //var d = lc.LucasKanadeStep(t, 100);
-            
-            double[] p;
-            
-            int diff = lc.ImgsDiff(t);
-            Console.WriteLine(diff);
-            Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-            foreach (int pyramid in new int[] { 64, 32, 16, 8, 4, 2, 1 })
-            {
-				/*if (pyramid == 64)
-				{
-					lc = new LucasKanadeEuclidean();
-					lc.ImgScene = scene;
-					lc.ImgObj = obj;
-				}*/
-				if (pyramid == 4)
-				{
-					lc = new LucasKanadeSimilarity();
-					lc.ImgScene = scene;
-					lc.ImgObj = obj;
-				}
-                Console.WriteLine("Pyramid = " + pyramid);
-				lc.PyramidLevel = pyramid;
-                foreach (int scale in new int[] { 128, 64, 32, 16, 8, 4, 2, 1 })//200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
-                {
-                    
-                    //lc.Scale = scale;
-                    Console.WriteLine("scale = " + scale);
-                    diff = int.MaxValue;
-                    for (int i = 0; /* i < 10 */; i++)
-                    //while ((p = lc.LucasKanadeStep(t)) != null)
-                    {
-                        lc.Scale = scale;
-                        p = lc.LucasKanadeStepAutoScale(t, scale);
-                        //p = lc.LucasKanadeStep(t);
-                        Console.WriteLine(lc.ImgsDiff(p));
-                        var diff0 = lc.ImgsDiff(p);
-                        if (p == null || Eq(p, t))// || diff0 < diff)
-                            break;
-
-                        diff = diff0;
-                        t = p;
+			    MakeEqualBright(scene, obj);
 
 
-                        using (new Window("src image", scene))
-                        using (new Window("obj image", obj))
-                        using (new Window("gr x", lc.GradientsX))
-                        using (new Window("gr y", lc.GradientsY))
-                        //using (new Window("error", lc.ErrorImg))
-                        {
-                            Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-                            //Cv2.WaitKey();
-                        }
-                    }
-                }
-            }
+			    Affine.DrawImageOver(scene, obj, h);
+			    h = new KeyPointStitcher(true).Stitch(scene, obj, h);
+
+			    Affine.DrawImageOver(scene, obj, h);
+
+			    continue;
+
+			    ////////////////////////////////////////////////////////////////////////////
+			    ////////////////////////////////////////////////////////////////////////////
+
+			    var lc = new LucasKanadeAlgo(new LucasKanadeEuclidean());
+			    lc.UseOriginGradients = false;
+			    lc.ImgScene = scene;
+			    lc.ImgObj = obj;
+
+#if false
+
+
+			    var h22 = h[2, 2];
+			    for (int i = 0; i < 2; i++)
+				    for (int j = 0; j < 2; j++)
+					    h[i, j] /= h22;
+
+			    var t = new double[] {h[0, 2], h[1, 2], h[0, 0] - 1, h[0, 1], h[1, 0], h[1, 1] - 1};
+			    lc.LucasKanadeData.P = t;
+
+#else
+			lc.HomographyMatrix = h;
+			var t = lc.LucasKanadeData.P;
+#endif
+			    double[] p;
+
+			    //int diff = lc.ImgsDiff(t);
+
+
+			    int diff = lc.ImgsDiff(t);
+
+			    Console.WriteLine(diff);
+			    Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
+			    foreach (int pyramid in new int[] {1 })//128, 64, 32, 16, 8, 4, 2})
+			    {
+				    Console.WriteLine("Pyramid = " + pyramid);
+				    lc.PyramidLevel = pyramid;
+				    foreach (int scale in new int[] {4, 2, 1}) //200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
+				    {
+
+					    //lc.Scale = scale;
+					    Console.WriteLine("scale = " + scale);
+					    diff = int.MaxValue;
+					    for (int i = 0; /* i < 10 */; i++)
+						    //while ((P = lc.LucasKanadeStep(t)) != null)
+					    {
+						    lc.Scale = scale;
+						    p = lc.LucasKanadeStepAutoScale(t, scale);
+						    //P = lc.LucasKanadeStep(t);
+						    Console.WriteLine(lc.ImgsDiff(p));
+						    var diff0 = lc.ImgsDiff(p);
+						    if (p == null || Eq(p, t)) // || diff0 < diff)
+							    break;
+
+						    diff = diff0;
+						    t = p;
+
+
+						    using (new Window("src image", scene))
+						    using (new Window("obj image", obj))
+						    using (new Window("gr x", lc.GradientsX))
+						    using (new Window("gr y", lc.GradientsY))
+							    //using (new Window("error", lc.ErrorImg))
+						    {
+							    Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
+							    //Cv2.WaitKey();
+						    }
+					    }
+				    }
+			    }
 
 
 
-            using (new Window("src image", scene))
-            using (new Window("dst image", obj))
+			    using (new Window("src image", scene))
+			    using (new Window("dst image", obj))
+			    {
+				    Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
+				    Cv2.WaitKey();
+			    }
+		    }
 
-            {
-                Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-                Cv2.WaitKey();
-            }
-
-        }
+	    }
 
         static void MakeEqualBright(Mat img1, Mat img2)
         {

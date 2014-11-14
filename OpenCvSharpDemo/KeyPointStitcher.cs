@@ -26,16 +26,23 @@ namespace OpenCvSharpDemo
 
 		public double[,] Stitch(Mat imgScene, Mat imgObject, double[,] homographyStart)
 		{
-			var sift = new SIFT();
+			var algo = new SURF();
 			
 			KeyPoint[] keypointsScene, keypointsObject;
 			var descriptorsScene = new MatOfFloat();
 			var descriptorsObj = new MatOfFloat();
-			
-			sift.Run(imgScene, null, out keypointsScene, descriptorsScene);
-			sift.Run(imgObject, null, out keypointsObject, descriptorsObj);
 
-			var matcher = new BFMatcher();
+			algo.Run(imgScene, null, out keypointsScene, descriptorsScene);
+			algo.Run(imgObject, null, out keypointsObject, descriptorsObj);
+
+			Console.WriteLine(descriptorsScene.Width);
+			Console.WriteLine(descriptorsScene.Height);
+			Console.WriteLine(descriptorsObj.Width);
+			Console.WriteLine(descriptorsObj.Height);
+			Console.WriteLine(keypointsScene.Count());
+			Console.WriteLine(keypointsObject.Count());
+			
+			var matcher = new FlannBasedMatcher();//new BFMatcher());
 			var matches = matcher.Match(descriptorsObj, descriptorsScene);
 
 			if (homographyStart != null)
@@ -52,7 +59,9 @@ namespace OpenCvSharpDemo
 				matches = nmatches;
 			}
 
-			//matches = matches.Where((m) => (keypointsObject[m.QueryIdx].Octave > 1000000)).ToArray();
+			
+
+			matches = matches.Where((m) => (keypointsObject[m.QueryIdx].Octave > 0)).ToArray();
 
 			var sortedMatches = matches.OrderBy((m) => m.Distance);
 			matches = sortedMatches.Where((m, id) => id < 20).ToArray();

@@ -6,16 +6,56 @@ using OpenCvSharp;
 
 namespace OpenCvSharpDemo
 {
-	internal class LucasKanadeAffine : LucasKanadeAlgo
+	internal class LucasKanadeData
+	{
+		public virtual Func<int, int, double[,]> Jacobian
+		{
+			get
+			{
+				return (x, y) => new double[,] { { 1, 0 }, { 0, 1 } };
+			}
+		}
+
+		public virtual int[] Indices
+		{
+			get
+			{
+				int dim = Dimension;
+				int[] res = new int[dim];
+				for (int i = 0; i < dim; i++)
+					res[i] = i;
+				return res;
+			}
+		}
+
+		public virtual int Dimension { get { return Jacobian(0, 0).GetLength(1); } }
+
+		public double[] P { get; set; }
+
+		public virtual double[,] HomographyMatrix
+		{
+			get
+			{
+				return new double[,] { { 1, 0, P[0] }, { 0, 1, P[1] }, { 0, 0, 1 } };
+			}
+		}
+
+		public LucasKanadeData()
+		{
+			P = new double[Dimension];
+		}
+	}
+
+	internal class LucasKanadeAffine : LucasKanadeData
 	{
 		public override Func<int, int, double[,]> Jacobian
 		{
 			get { return (x, y) => new double[,] {{1, 0, x, y, 0, 0}, {0, 1, 0, 0, x, y}}; }
 		}
 
-		public override double[,] Matrix
+		public override double[,] HomographyMatrix
 		{
-			get { return new double[,] {{1 + p[2], p[3], p[0]}, {p[4], 1 + p[5], p[1]}}; }
+			get { return new double[,] {{1 + P[2], P[3], P[0]}, {P[4], 1 + P[5], P[1]}, {0, 0, 1}}; }
 		}
 	}
 
@@ -35,16 +75,16 @@ namespace OpenCvSharpDemo
 		}
 	}
 
-	internal class LucaKanadeSimilarity : LucasKanadeAlgo
+	internal class LucaKanadeSimilarity : LucasKanadeData
 	{
 		public override Func<int, int, double[,]> Jacobian
 		{
 			get { return (x, y) => new double[,] {{1, 0, x, -y}, {0, 1, y, x}}; }
 		}
 
-		public override double[,] Matrix
+		public override double[,] HomographyMatrix
 		{
-			get { return new double[,] {{1 + p[2], -p[3], p[0]}, {p[3], 1 + p[2], p[1]}}; }
+			get { return new double[,] { { 1 + P[2], -P[3], P[0] }, { P[3], 1 + P[2], P[1] }, { 0, 0, 1 } }; }
 		}
 	}
 
@@ -55,27 +95,27 @@ namespace OpenCvSharpDemo
 			get
 			{
 				//return (x, y) => new double[,] { { 1, 0, x }, { 0, 1, y } };
-				return (x, y) => new double[,] {{1 - p[2]/2, 0, x - p[0]/2}, {0, 1 - p[2]/2, y - p[1]/2}};
-				//return (x, y) => new double[,] { { 1 - p[2] / 10, 0, x / 5 - p[0] / 10 }, { 0, 1 - p[2] / 10, y / 5 - p[1] / 10 } };
+				return (x, y) => new double[,] {{1 - P[2]/2, 0, x - P[0]/2}, {0, 1 - P[2]/2, y - P[1]/2}};
+				//return (x, y) => new double[,] { { 1 - P[2] / 10, 0, x / 5 - P[0] / 10 }, { 0, 1 - P[2] / 10, y / 5 - P[1] / 10 } };
 			}
 		}
 
-		public override double[,] Matrix
+		public override double[,] HomographyMatrix
 		{
 			get
 			{
-				//return new double[,] { { 1 + p[2], 0, p[0] }, { 0, 1 + p[2], p[1] } };
-				return new double[,] {{1 + p[2], 0, p[0]*(1 - p[2]/2)}, {0, 1 + p[2], p[1]*(1 - p[2]/2)}};
-				//return new double[,] { { 1 + p[2] / 5, 0, p[0] * (1 - p[2] / 10) }, { 0, 1 + p[2] / 5, p[1] * (1 - p[2] / 10) } };
+				//return new double[,] { { 1 + P[2], 0, P[0] }, { 0, 1 + P[2], P[1] } };
+				return new double[,] {{1 + P[2], 0, P[0]*(1 - P[2]/2)}, {0, 1 + P[2], P[1]*(1 - P[2]/2)}};
+				//return new double[,] { { 1 + P[2] / 5, 0, P[0] * (1 - P[2] / 10) }, { 0, 1 + P[2] / 5, P[1] * (1 - P[2] / 10) } };
 			}
 		}
 	}*/
 
-	internal class LucasKanadeSimilarity : LucasKanadeAlgo
+	internal class LucasKanadeSimilarity : LucasKanadeData
 	{
 		protected double Teta
 		{
-			get { return p != null ? p[2] : 0; }
+			get { return P != null ? P[2] : 0; }
 		}
 
 		protected double Sin
@@ -90,7 +130,7 @@ namespace OpenCvSharpDemo
 
 		protected double Alpha
 		{
-			get { return p.Length > 3 ? p[3] : 1; }
+			get { return P.Length > 3 ? P[3] : 1; }
 		}
 
 		public override int Dimension
@@ -110,15 +150,20 @@ namespace OpenCvSharpDemo
 			}
 		}
 
-		public override double[,] Matrix
+		public override double[,] HomographyMatrix
 		{
 			get
 			{
 				var cos = Cos;
 				var sin = Sin;
-				return new double[,] { { cos * Alpha, -sin * Alpha, p[0] }, { sin * Alpha, cos * Alpha, p[1] } };
-				//return new double[,] { { 1 + p[2], p[3], p[0] }, { p[4], 1 + p[5], p[1] } };
+				return new double[,] { { cos * Alpha, -sin * Alpha, P[0] }, { sin * Alpha, cos * Alpha, P[1] }, { 0, 0, 1 } };
+				//return new double[,] { { 1 + P[2], P[3], P[0] }, { P[4], 1 + P[5], P[1] } };
 			}
+		}
+
+		public LucasKanadeSimilarity()
+		{
+			P[3] = 1;
 		}
 	}
 
@@ -129,7 +174,8 @@ namespace OpenCvSharpDemo
             get { return (x, y) => new double[,] { { 1, 0, -Sin * x * Alpha - Cos * y * Alpha }, { 0, 1, Cos * x * Alpha - Sin * y * Alpha } }; }
         }
 
-        public override int Dimension { get { return 3; } }
+		public override int[] Indices { get { return new int[] { 0, 1, 2 }; } }
+        //public override int Dimension { get { return 4; } }
     }
 
     internal class LucasKanadeScaleNoMove : LucasKanadeSimilarity
@@ -139,7 +185,7 @@ namespace OpenCvSharpDemo
             get { return (x, y) => new double[,] { { x * Cos - y * Sin }, { y * Cos - x * Sin } }; }
         }
 
-        protected override int[] Indices { get { return new int[] { 3 }; } }
+        public override int[] Indices { get { return new int[] { 3 }; } }
     }
 
 	internal class LucasKanadeTranslate : LucasKanadeEuclidean

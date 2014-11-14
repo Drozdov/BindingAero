@@ -33,38 +33,12 @@ namespace OpenCvSharpDemo
             }
         }
 
-        public virtual Func<int, int, double[,]> Jacobian
-        {
-            get
-            {
-                return (x, y) => new double[,] { { 1, 0 }, { 0, 1 } };
-            }
-        }
+		public LucasKanadeData LucasKanadeData { get; set; }
 
-		// TODO: use it
-	    protected virtual int[] Indices
-	    {
-            get
-            {
-                int dim = Dimension;
-                int[] res = new int[dim];
-                for (int i = 0; i < dim; i++)
-                    res[i] = i;
-                return res;
-            }
-	    }
-
-        public virtual int Dimension { get { return Jacobian(0, 0).GetLength(1); } }
-
-        protected double[] p;
-
-        public virtual double[,] Matrix
-        {
-            get
-            {
-                return new double[,] { { 1, 0, p[0] }, { 0, 1, p[1] } };
-            }
-        }
+		public LucasKanadeAlgo(LucasKanadeData data = null)
+		{
+			LucasKanadeData = data ?? new LucasKanadeData();
+		}
 
         protected void Translate(int x0, int y0, out int x, out int y, bool orig = true)
         {
@@ -74,9 +48,38 @@ namespace OpenCvSharpDemo
 
         protected int Translate(int x0, int y0, int dim, bool orig)
         {
-            var mat = Matrix;
-            return (int) (x0 * mat[dim, 0] + y0 * mat[dim, 1] + mat[dim, 2] / (orig ? 1 : pyramidLevel));
+			var mat = HomographyMatrix;
+	        var d = (int) (x0 * mat[2, 0] + y0 * mat[2, 1] + mat[2, 2]);
+            return (int) (x0 * mat[dim, 0] + y0 * mat[dim, 1] + mat[dim, 2] / (orig ? d : d * pyramidLevel));
         }
+
+	    private double[,] homography = new double[,] {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+	    public Double[,] HomographyMatrix
+	    {
+		    get { return Multiply(homography, LucasKanadeData.HomographyMatrix); }
+			set { homography = value; }
+	    }
+
+		private double[,] Multiply(double[,] mat1, double[,] mat2)
+		{
+			if (mat1.GetLength(1) != mat2.GetLength(0))
+				return null;
+			int r = mat1.GetLength(1);
+			int m = mat1.GetLength(0);
+			int n = mat2.GetLength(1);
+			var res = new double[m, n];
+			for (int i = 0; i < m; i++)
+			{
+				for (int j = 0; j < n; j++)
+				{
+					for (int k = 0; k < r; k++)
+					{
+						res[i, j] += mat1[i, k]*mat2[k, j];
+					}
+				}
+			}
+			return res;
+		}
 
         protected int pyramidLevel = 1;
         public int PyramidLevel
@@ -96,7 +99,8 @@ namespace OpenCvSharpDemo
         {
             get
             {
-                Mat res = new Mat(new Size(imgObj.Size().Width / pixelSize, imgObj.Size().Height / pixelSize), MatType.CV_8U);
+	            pixelSize = pyramidLevel;
+                Mat res = new Mat(new Size(imgObj.Size().Width, imgObj.Size().Height), MatType.CV_8U);
                 int x, y;
                 for (int y0 = 0; y0 < imgObj.Height; y0 += pixelSize)
                 {
@@ -157,7 +161,7 @@ namespace OpenCvSharpDemo
         {
             var warped = Warped;
             var gradient = Gradient(warped);
-            var dim = Indices.Length;
+			var dim = LucasKanadeData.Indices.Length;
             var hessian = new Mat(new Size(dim, dim), MatType.CV_64F, 0);
             var hes = new int[dim, dim];
             var b = new int[dim];
@@ -165,7 +169,7 @@ namespace OpenCvSharpDemo
             {
                 for (int x = 1; x < imgObj.Width - 1; x++)
                 {
-                    var jacobian = Jacobian(x, y);
+					var jacobian = LucasKanadeData.Jacobian(x, y);
                     var p0 = new int[dim];
                     for (int i = 0; i < dim; i++)
                     {
@@ -185,12 +189,12 @@ namespace OpenCvSharpDemo
             try
             {
                 var hessianInv = hessian.Inv();
-                double[] res = new double[Dimension];
+				double[] res = new double[LucasKanadeData.Dimension];
                 for (int i = 0; i < dim; i++)
                 {
                     for (int j = 0; j < dim; j++)
                     {
-                        res[Indices[i]] += hessianInv.Get<double>(i, j) * b[j];
+						res[LucasKanadeData.Indices[i]] += hessianInv.Get<double>(i, j) * b[j];
                     }
                 }
                 return res;
@@ -220,17 +224,17 @@ namespace OpenCvSharpDemo
         public double[] LucasKanadeStep(double[] t, int scale)
         {
             if (t == null)
-                t = new double[Dimension];
-            if (t.Length < Dimension)
+				t = new double[LucasKanadeData.Dimension];
+			if (t.Length < LucasKanadeData.Dimension)
             {
-                var t1 = new double[Dimension];
+				var t1 = new double[LucasKanadeData.Dimension];
                 for (int i = 0; i < t.Length; i++)
                 {
                     t1[i] = t[i];
                 }
                 t = t1;
             }
-            p = t;//.Select(x => (double) x).ToArray();
+			LucasKanadeData.P = t;//.Select(x => (double) x).ToArray();
             var res0 = GetDp();
             var res = new double[res0.Length];
             for (int i = 0; i < res0.Length; i++)
@@ -243,23 +247,23 @@ namespace OpenCvSharpDemo
         public double[] LucasKanadeStepAutoScale(double[] t, int step)
         {
             if (t == null)
-                t = new double[Dimension];
-            if (t.Length < Dimension)
+				t = new double[LucasKanadeData.Dimension];
+			if (t.Length < LucasKanadeData.Dimension)
             {
-                var t1 = new double[Dimension];
+				var t1 = new double[LucasKanadeData.Dimension];
                 for (int i = 0; i < t.Length; i++)
                 {
                     t1[i] = t[i];
                 }
                 t = t1;
             }
-            p = t;//.Select(x => (double) x).ToArray();
+			LucasKanadeData.P = t;//.Select(x => (double) x).ToArray();
             var res0 = GetDp();
             double[] result = null;
             int min = int.MaxValue;
             for (int j = 0; j < 3; j++)
             {
-                var res = new double[p.Length];
+				var res = new double[LucasKanadeData.P.Length];
                 for (int i = 0; i < res.Length; i++)
                 {
                     res[i] = t[i] + (i < res0.Length ? (res0[i] * step * j) : 0);
@@ -310,7 +314,7 @@ namespace OpenCvSharpDemo
             return new int[] { (int)t[0] + diff[0], (int)t[1] + diff[1] };
         }
 
-        // TODO: not used jet
+        // TODO: not used yet
         bool useOriginGradients = false;
         public bool UseOriginGradients { set { this.useOriginGradients = value; } }
 
@@ -318,19 +322,21 @@ namespace OpenCvSharpDemo
             int res = 0;
             try
             {
-                this.p = p;
+				LucasKanadeData.P = p;
 	            int w = imgObjOrig.Size().Width, h = imgObjOrig.Size().Height;
-	            if (fail(0, 0) || fail(w, 0) || fail(0, h) || fail(w, h))
-		            return int.MaxValue;
+	            //if (fail(0, 0) || fail(w, 0) || fail(0, h) || fail(w, h))
+		        //    return int.MaxValue;
+	            
                 int x, y;
                 for (int y0 = 0; y0 < imgObj.Height; y0++)
                 {
                     for (int x0 = 0; x0 < imgObj.Width; x0++)
                     {
                         Translate(x0, y0, out x, out y, false);
-                        if (x < 0 || x >= imgScene.Width || y < 0 || y >= imgScene.Height)
-                            return int.MaxValue;
-                        res += Math.Abs(imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x));
+	                    if (x < 0 || x >= imgScene.Width || y < 0 || y >= imgScene.Height)
+		                    res += 255;
+						else
+							res += Math.Abs(imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x));
                     }
                 }
             }
