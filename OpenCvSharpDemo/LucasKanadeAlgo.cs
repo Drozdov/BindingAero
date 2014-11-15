@@ -99,12 +99,12 @@ namespace OpenCvSharpDemo
         {
             get
             {
-	            pixelSize = pyramidLevel;
+                pixelSize = 1;
                 Mat res = new Mat(new Size(imgObj.Size().Width, imgObj.Size().Height), MatType.CV_8U);
                 int x, y;
-                for (int y0 = 0; y0 < imgObj.Height; y0 += pixelSize)
+                for (int y0 = 0; y0 < imgObj.Height; y0++)
                 {
-                    for (int x0 = 0; x0 < imgObj.Width; x0 += pixelSize)
+                    for (int x0 = 0; x0 < imgObj.Width; x0++)
                     {
                         int value = 0;
                         for (int y1 = y0; y1 < y0 + pixelSize; y1++)
@@ -261,7 +261,7 @@ namespace OpenCvSharpDemo
             var res0 = GetDp();
             double[] result = null;
             int min = int.MaxValue;
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < 10; j++)
             {
 				var res = new double[LucasKanadeData.P.Length];
                 for (int i = 0; i < res.Length; i++)
@@ -333,10 +333,13 @@ namespace OpenCvSharpDemo
                     for (int x0 = 0; x0 < imgObj.Width; x0++)
                     {
                         Translate(x0, y0, out x, out y, false);
-	                    if (x < 0 || x >= imgScene.Width || y < 0 || y >= imgScene.Height)
-		                    res += 255;
-						else
-							res += Math.Abs(imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x));
+                        int d;
+                        if (x < 0 || x >= imgScene.Width || y < 0 || y >= imgScene.Height)
+                            d = 127;
+                        else
+                            d = imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x);
+							//res += Math.Abs(imgObj.Get<byte>(y0, x0) - imgScene.Get<byte>(y, x));
+                        res += d * d;
                     }
                 }
             }

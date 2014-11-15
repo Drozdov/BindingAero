@@ -26,7 +26,7 @@ namespace OpenCvSharpDemo
 
 		public double[,] Stitch(Mat imgScene, Mat imgObject, double[,] homographyStart)
 		{
-			var algo = new SURF();
+			var algo = new SIFT();
 			
 			KeyPoint[] keypointsScene, keypointsObject;
 			var descriptorsScene = new MatOfFloat();
@@ -61,7 +61,7 @@ namespace OpenCvSharpDemo
 
 			
 
-			matches = matches.Where((m) => (keypointsObject[m.QueryIdx].Octave > 0)).ToArray();
+			//matches = matches.Where((m) => (keypointsObject[m.QueryIdx].Octave > 0)).ToArray();
 
 			var sortedMatches = matches.OrderBy((m) => m.Distance);
 			matches = sortedMatches.Where((m, id) => id < 20).ToArray();

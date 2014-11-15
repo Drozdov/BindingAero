@@ -48,14 +48,15 @@ namespace OpenCvSharpDemo
 
 	internal class LucasKanadeAffine : LucasKanadeData
 	{
+        const int d = 10;
 		public override Func<int, int, double[,]> Jacobian
 		{
-			get { return (x, y) => new double[,] {{1, 0, x, y, 0, 0}, {0, 1, 0, 0, x, y}}; }
+			get { return (x, y) => new double[,] {{1, 0, x / d, y / d, 0, 0}, {0, 1, 0, 0, x / d, y / d}}; }
 		}
 
 		public override double[,] HomographyMatrix
 		{
-			get { return new double[,] {{1 + P[2], P[3], P[0]}, {P[4], 1 + P[5], P[1]}, {0, 0, 1}}; }
+			get { return new double[,] {{1 + P[2] / d, P[3] / d, P[0]}, {P[4] / d, 1 + P[5] / d, P[1]}, {0, 0, 1}}; }
 		}
 	}
 
@@ -115,7 +116,7 @@ namespace OpenCvSharpDemo
 	{
 		protected double Teta
 		{
-			get { return P != null ? P[2] : 0; }
+			get { return (P != null && P.Length > 2) ? P[2] : 0; }
 		}
 
 		protected double Sin
@@ -144,8 +145,8 @@ namespace OpenCvSharpDemo
 			{
 				return (x, y) => new double[,]
 					{
-						{1, 0, -Sin*x*Alpha - Cos*y*Alpha, x*Cos - y*Sin},
-						{0, 1, Cos*x*Alpha - Sin*y*Alpha, y*Cos - x*Sin}
+						{1, 0, (-Sin*x*Alpha - Cos*y*Alpha), (x*Cos - y*Sin)},
+						{0, 1, (Cos*x*Alpha - Sin*y*Alpha), (y*Cos - x*Sin)}
 					};
 			}
 		}
@@ -161,10 +162,11 @@ namespace OpenCvSharpDemo
 			}
 		}
 
-		public LucasKanadeSimilarity()
-		{
-			P[3] = 1;
-		}
+        public LucasKanadeSimilarity()
+        {
+            if (P.Length > 3)
+                P[3] = 1;
+        }
 	}
 
     internal class LucasKanadeEuclidean : LucasKanadeSimilarity
@@ -199,6 +201,8 @@ namespace OpenCvSharpDemo
 		{
 			get { return 2; }
 		}
+
+        public override int[] Indices { get { return new int[] { 0, 1 }; } }
 	}
 
 }

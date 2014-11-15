@@ -74,6 +74,12 @@ namespace OpenCvSharpDemo
 		    new double[,] {{0, 0.9, 400}, {-0.9, 0, 700}, {0, 0, 1}}
 		    );
 
+        private static Test dummyTest = new Test(
+            new Mat("../../../scene.png", LoadMode.GrayScale),
+            new Mat("../../../obj.png", LoadMode.GrayScale),
+            new double[,] { { 1, 0, 90 }, { 0, 1, 130 }, { 0, 0, 1 } }
+		    );
+
 
 
 	    private static Mat Resize(Mat orig, int times)
@@ -99,7 +105,7 @@ namespace OpenCvSharpDemo
 		    Mat scene = null, obj = null;
 		    Double[,] h;
 
-		    foreach (var test in new Test[] {test0, test1, test2, test3, test4})
+		    foreach (var test in new Test[] { test1 })//test1, test2, test3, test4})
 		    {
 			    scene = test.Scene;
 			    obj = test.Object;
@@ -108,17 +114,17 @@ namespace OpenCvSharpDemo
 			    MakeEqualBright(scene, obj);
 
 
-			    Affine.DrawImageOver(scene, obj, h);
-			    h = new KeyPointStitcher(true).Stitch(scene, obj, h);
+			    //Affine.DrawImageOver(scene, obj, h);
+			    //h = new KeyPointStitcher(true).Stitch(scene, obj, h);
 
 			    Affine.DrawImageOver(scene, obj, h);
 
-			    continue;
+			    //continue;
 
 			    ////////////////////////////////////////////////////////////////////////////
 			    ////////////////////////////////////////////////////////////////////////////
 
-			    var lc = new LucasKanadeAlgo(new LucasKanadeEuclidean());
+			    var lc = new LucasKanadeAlgo(new LucasKanadeSimilarity());
 			    lc.UseOriginGradients = false;
 			    lc.ImgScene = scene;
 			    lc.ImgObj = obj;
@@ -147,13 +153,14 @@ namespace OpenCvSharpDemo
 
 			    Console.WriteLine(diff);
 			    Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
-			    foreach (int pyramid in new int[] {1 })//128, 64, 32, 16, 8, 4, 2})
+			    foreach (int pyramid in new int[] {64, 32, 16, 8, 4})
 			    {
 				    Console.WriteLine("Pyramid = " + pyramid);
 				    lc.PyramidLevel = pyramid;
-				    foreach (int scale in new int[] {4, 2, 1}) //200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
-				    {
-
+                    int scale = 1;//foreach (int scale in new int[] {4, 2, 1}) //200, 110, 70, 35, 20, 10, 7, 5, 3, 2, 1})
+                    foreach (var data in new LucasKanadeData[] { new LucasKanadeSimilarity(), new LucasKanadeData()})
+                    {
+                        lc.LucasKanadeData = data;
 					    //lc.Scale = scale;
 					    Console.WriteLine("scale = " + scale);
 					    diff = int.MaxValue;
@@ -176,7 +183,7 @@ namespace OpenCvSharpDemo
 						    using (new Window("obj image", obj))
 						    using (new Window("gr x", lc.GradientsX))
 						    using (new Window("gr y", lc.GradientsY))
-							    //using (new Window("error", lc.ErrorImg))
+                                //using (new Window("error", lc.ErrorImg))
 						    {
 							    Affine.DrawImageOver(scene, obj, lc.PointsConvertation);
 							    //Cv2.WaitKey();
