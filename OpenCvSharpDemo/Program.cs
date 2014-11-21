@@ -102,10 +102,14 @@ namespace OpenCvSharpDemo
 	        //scene = scene.ExtractChannel(1);
 	        //obj = obj.ExtractChannel(1);
 
+			var vectors = SiftPcaDescriptor.Eigenvectors;
+			
+
+
 		    Mat scene = null, obj = null;
 		    Double[,] h;
 
-		    foreach (var test in new Test[] { test1 })//test1, test2, test3, test4})
+		    foreach (var test in new Test[] { test0, test1, test2, test3, test4})
 		    {
 			    scene = test.Scene;
 			    obj = test.Object;
@@ -115,11 +119,11 @@ namespace OpenCvSharpDemo
 
 
 			    //Affine.DrawImageOver(scene, obj, h);
-			    //h = new KeyPointStitcher(true).Stitch(scene, obj, h);
+			    h = new KeyPointStitcher(true).Stitch(scene, obj, h);
 
-			    Affine.DrawImageOver(scene, obj, h);
+			    //Affine.DrawImageOver(scene, obj, h);
 
-			    //continue;
+				continue;
 
 			    ////////////////////////////////////////////////////////////////////////////
 			    ////////////////////////////////////////////////////////////////////////////

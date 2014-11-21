@@ -108,6 +108,7 @@
     <Compile Include="LucasKanadeAlgo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SiftPcaDescriptor.cs" />
     <Compile Include="SurfExample.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -247,6 +248,9 @@
     <Content Include="..\packages\OpenCvSharp-AnyCPU.2.4.9.20140901\Content\dll\x86\opencv_videostab249.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <EmbeddedResource Include="eigenvectors.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

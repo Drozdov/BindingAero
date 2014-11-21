@@ -24,14 +24,37 @@ namespace OpenCvSharpDemo
 			return Stitch(imgScene, imgObject, null);
 		}
 
+		private int GetOctave(KeyPoint kpt)
+		{
+
+			// keep octave below 256 (255 is 1111 1111)
+			int octave = kpt.Octave & 255;
+			// if octave is >= 128, ...????
+			octave = octave < 128 ? octave : (-128 | octave);
+			// 1/2^absval(octave)
+			float scale = octave >= 0 ? 1.0f / (1 << octave) : (float)(1 << -octave);
+			// multiply the point's radius by the calculated scale
+			float scl = kpt.Size * 0.5f * scale;
+
+			//Console.WriteLine(scl);
+
+			// the constant sclFactor is 3 and has the following comment:
+			// determines the size of a single descriptor orientation histogram
+			//float histWidth = scl;
+			// descWidth is the number of histograms on one side of the descriptor
+			// the long float is sqrt(2)
+			//int radius = (int)(histWidth * 1.4142135623730951f * (descWidth + 1) * 0.5f);
+
+			return kpt.Octave & 0xFF00;
+		}
+
 		public double[,] Stitch(Mat imgScene, Mat imgObject, double[,] homographyStart)
 		{
 			var algo = new SIFT();
-			
 			KeyPoint[] keypointsScene, keypointsObject;
 			var descriptorsScene = new MatOfFloat();
 			var descriptorsObj = new MatOfFloat();
-
+			
 			algo.Run(imgScene, null, out keypointsScene, descriptorsScene);
 			algo.Run(imgObject, null, out keypointsObject, descriptorsObj);
 
@@ -55,13 +78,26 @@ namespace OpenCvSharpDemo
 					var point0 = PerspectiveTransform(p, homographyStart);
 					var p1 = keypointsScene[match.TrainIdx].Pt;
 					nmatches[j++] = new DMatch(match.QueryIdx, match.TrainIdx, match.Distance * (300 + (float)point0.DistanceTo(p1)));
+					var octave = keypointsScene[match.TrainIdx].Octave;
+					var bytes = BitConverter.GetBytes(octave);
+					foreach (var a in bytes)
+					{
+						Console.Write(a + " ");
+					}
+					Console.WriteLine(octave & 0xFF);
 				}
 				matches = nmatches;
 			}
 
 			
 
-			//matches = matches.Where((m) => (keypointsObject[m.QueryIdx].Octave > 0)).ToArray();
+			matches = matches.Where((m) => (GetOctave(keypointsObject[m.QueryIdx]) > 1)).ToArray();
+
+			foreach (var m in matches)
+			{
+				SiftPcaDescriptor.GetValues(imgScene, keypointsScene[m.TrainIdx]);
+
+			}
 
 			var sortedMatches = matches.OrderBy((m) => m.Distance);
 			matches = sortedMatches.Where((m, id) => id < 20).ToArray();
