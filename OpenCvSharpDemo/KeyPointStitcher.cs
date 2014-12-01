@@ -78,13 +78,6 @@ namespace OpenCvSharpDemo
 					var point0 = PerspectiveTransform(p, homographyStart);
 					var p1 = keypointsScene[match.TrainIdx].Pt;
 					nmatches[j++] = new DMatch(match.QueryIdx, match.TrainIdx, match.Distance * (300 + (float)point0.DistanceTo(p1)));
-					var octave = keypointsScene[match.TrainIdx].Octave;
-					var bytes = BitConverter.GetBytes(octave);
-					foreach (var a in bytes)
-					{
-						Console.Write(a + " ");
-					}
-					Console.WriteLine(octave & 0xFF);
 				}
 				matches = nmatches;
 			}
@@ -93,14 +86,20 @@ namespace OpenCvSharpDemo
 
 			matches = matches.Where((m) => (GetOctave(keypointsObject[m.QueryIdx]) > 1)).ToArray();
 
-			foreach (var m in matches)
-			{
-				SiftPcaDescriptor.GetValues(imgScene, keypointsScene[m.TrainIdx]);
-
-			}
-
 			var sortedMatches = matches.OrderBy((m) => m.Distance);
 			matches = sortedMatches.Where((m, id) => id < 20).ToArray();
+
+            foreach (var m in matches)
+            {
+                SiftPcaDescriptor.GetValues(imgObject, keypointsObject[m.QueryIdx]);
+                var m1 = SiftPcaDescriptor.win;
+                SiftPcaDescriptor.GetValues(imgScene, keypointsScene[m.TrainIdx]);
+                var m2 = SiftPcaDescriptor.win;
+                using (new Window("1", m1))
+                using (new Window("2", m2))
+                    DrawMatchings(imgScene, imgObject, homographyStart, keypointsObject, keypointsScene,
+                        new DMatch[] { m });
+            }
 
 			int n = matches.Count();
 

@@ -76,8 +76,8 @@ namespace OpenCvSharpDemo
 		    {
 			    Cv.WarpPerspective(srcImg, dstImg, h, Interpolation.Linear);
 			    //Cv.WarpAffine(srcImg, dstImg, mapMatrix, Interpolation.Linear);// | Interpolation.FillOutliers);
-			    using (new CvWindow("src", sceneImg))
-			    using (new CvWindow("dst", dstImg))
+			    using (new CvWindow("src", WindowMode.NormalGui, sceneImg))
+                using (new CvWindow("dst", WindowMode.NormalGui, dstImg))
 			    {
 				    Cv.WaitKey(0);
 			    }
