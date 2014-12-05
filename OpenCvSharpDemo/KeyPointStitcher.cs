@@ -58,14 +58,17 @@ namespace OpenCvSharpDemo
 			algo.Run(imgScene, null, out keypointsScene, descriptorsScene);
 			algo.Run(imgObject, null, out keypointsObject, descriptorsObj);
 
-			Console.WriteLine(descriptorsScene.Width);
-			Console.WriteLine(descriptorsScene.Height);
-			Console.WriteLine(descriptorsObj.Width);
-			Console.WriteLine(descriptorsObj.Height);
-			Console.WriteLine(keypointsScene.Count());
-			Console.WriteLine(keypointsObject.Count());
+			keypointsScene = keypointsScene.Where((key) => key.Size > 10).ToArray();
+			keypointsObject = keypointsObject.Where((key) => key.Size > 10).ToArray();
+
+			descriptorsScene = SiftPcaDescriptor.GetDescriptors(imgScene, keypointsScene);
+			descriptorsObj = SiftPcaDescriptor.GetDescriptors(imgObject, keypointsObject);
 			
-			var matcher = new FlannBasedMatcher();//new BFMatcher());
+
+			Console.WriteLine(descriptorsScene.Height);
+			Console.WriteLine(descriptorsScene.Width);
+
+			var matcher = new BFMatcher();
 			var matches = matcher.Match(descriptorsObj, descriptorsScene);
 
 			if (homographyStart != null)
@@ -81,6 +84,18 @@ namespace OpenCvSharpDemo
 				}
 				matches = nmatches;
 			}
+			else
+			{
+				int j = 0;
+				var nmatches = new DMatch[matches.Count()];
+				foreach (var match in matches)
+				{
+					var p = keypointsObject[match.QueryIdx];
+					var p1 = keypointsScene[match.TrainIdx];
+					nmatches[j++] = new DMatch(match.QueryIdx, match.TrainIdx, match.Distance * (1 + Math.Abs(p1.Size - 0.9f * p.Size)));
+				}
+				matches = nmatches;
+			}
 
 			
 
@@ -89,17 +104,57 @@ namespace OpenCvSharpDemo
 			var sortedMatches = matches.OrderBy((m) => m.Distance);
 			matches = sortedMatches.Where((m, id) => id < 20).ToArray();
 
-            foreach (var m in matches)
+			float[][] vv1 = new float[20][];
+			float[][] vv2 = new float[20][];
+			var k = 0;
+
+            /*foreach (var m in matches)
             {
-                SiftPcaDescriptor.GetValues(imgObject, keypointsObject[m.QueryIdx]);
+				var v1 = SiftPcaDescriptor.GetValues(imgObject, keypointsObject[m.QueryIdx]);
                 var m1 = SiftPcaDescriptor.win;
-                SiftPcaDescriptor.GetValues(imgScene, keypointsScene[m.TrainIdx]);
+	            vv1[k] = v1;
+                var v2 = SiftPcaDescriptor.GetValues(imgScene, keypointsScene[m.TrainIdx]);
                 var m2 = SiftPcaDescriptor.win;
-                using (new Window("1", m1))
-                using (new Window("2", m2))
-                    DrawMatchings(imgScene, imgObject, homographyStart, keypointsObject, keypointsScene,
-                        new DMatch[] { m });
+	            vv2[k++] = v2;
+
+				DrawPoints(imgObject, new KeyPoint[] { keypointsObject[m.QueryIdx] }, 1, 0);
+				DrawPoints(imgScene, new KeyPoint[] { keypointsScene[m.TrainIdx] }, 1, 0);
+                
+				Console.WriteLine("=================");
+				for (int i = 0; i < 36; i++)
+				{
+					Console.WriteLine(v1[i] + " " + v2[i]);
+				}
+
+					using (new Window("1", m1))
+					using (new Window("2", m2))
+					{
+						DrawMatchings(imgScene, imgObject, homographyStart, keypointsObject, keypointsScene,
+									  new DMatch[] { m });
+					}
+				 
             }
+
+			System.IO.StreamWriter file = new System.IO.StreamWriter("out.txt");
+			
+			for (int i = 0; i < 20; i++)
+			{
+				for (int j = 0; j < 20; j++)
+				{
+					var v1 = vv1[i];
+					var v2 = vv2[j];
+					var diff = 0f;
+					for (int z = 0; z < 36; z++)
+					{
+						diff += Math.Abs(vv1[i][z] - vv2[j][z]);
+					}
+					file.Write("{0,10:0.0}  ", diff / 1e6);
+				}
+				file.WriteLine();
+			}
+
+			file.Close();*/
+
 
 			int n = matches.Count();
 
@@ -122,15 +177,65 @@ namespace OpenCvSharpDemo
 			
 			if (ShowMatchings)
 			{
+				/*foreach (var match in matches)
+				{
+					DrawPoints(imgObject, new KeyPoint[] { keypointsObject[match.QueryIdx] }, 1, 0);
+					DrawPoints(imgScene, new KeyPoint[] { keypointsScene[match.TrainIdx] }, 1, 0);
+				}*/
 				DrawMatchings(imgScene, imgObject, result, keypointsObject, keypointsScene, matches);
 			}
 
 			return result;
 		}
 
+		private static void DrawPoints(
+			Mat img, ///< [in/out] Image for drawing
+			IEnumerable<KeyPoint> keypoints, ///< [in]     Key points founded on image
+			int pointsToDraw, ///< [in]     How many points to draw
+			float minSize ///< [in]     Minimum key point size
+			)
+		{
+			//Dictionary<int, int> sh = new Dictionary<int, int>();
+			var drawedPoints = 0;
+			foreach (var kp in keypoints)
+			{
+				//sh[(int) kp.Size]++;
+				if (kp.Size > minSize)
+				{
+					Point p = new Point(kp.Pt.X, kp.Pt.Y);
+
+
+					img.Circle(p, (int) kp.Size * 5, new CvScalar(0, 255, 0));
+					float angle = (float) ((kp.Angle*Math.PI)/180.0f);
+					Point p2 = new Point((int) (p.X + kp.Size*Math.Cos(angle) * 5), (int) (p.Y + kp.Size*Math.Sin(angle) * 5));
+					img.Line(p, p2, new CvScalar(0, 255, 0));
+					++drawedPoints;
+					if (drawedPoints > pointsToDraw)
+					{
+						break;
+					}
+				}
+			}
+		}
+
 		private static void DrawMatchings(Mat imgScene, Mat imgObject, double[,] h, KeyPoint[] keypointsObject,
 		                                  KeyPoint[] keypointsScene, DMatch[] matches)
 		{
+
+			/*var imgScene_ = imgScene.Clone();
+			var imgObj_ = imgObject.Clone();
+			DrawPoints(imgScene_, keypointsScene, null, 200, 10);
+			DrawPoints(imgObj_, keypointsObject, null, 60, 10);
+			using (new Window("1", imgScene_))
+			using (new Window("2", imgObj_))
+				Cv.WaitKey();
+			return;*/
+
+			//DrawPoints(imgScene, keypointsScene, 1000, 10);
+			//DrawPoints(imgObject, keypointsObject, 1000, 10);
+			
+
+
 			var points = new CvPoint2D32f[4];
 			points[0] = new Point2f(0, 0);
 			points[1] = new Point2f(imgObject.Width, 0);
@@ -143,7 +248,7 @@ namespace OpenCvSharpDemo
 			}
 
 			var view = new Mat();
-			Cv2.DrawMatches(imgObject, keypointsObject, imgScene, keypointsScene, matches, view);
+			Cv2.DrawMatches(imgObject, keypointsObject, imgScene, keypointsScene, matches, view, null, null, null, DrawMatchesFlags.NotDrawSinglePoints);
 
 			for (int i = 0; i < points.Count(); i++)
 			{
@@ -162,6 +267,8 @@ namespace OpenCvSharpDemo
 				Cv2.WaitKey();
 			}
 		}
+
+		
 
 		private static Point2f PerspectiveTransform(Point2f point, double[,] h)
 		{
