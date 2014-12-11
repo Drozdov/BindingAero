@@ -2,3 +2,5 @@ OpenCvSharpDemo/bin/Debug/*
 OpenCvSharpDemo/obj/*
 OpenCvSharpDemo/bin/*
 OpenCvSharpDemo.suo
+WinFormsApp/bin/
+WinFormsApp/obj
